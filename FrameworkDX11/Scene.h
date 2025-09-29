@@ -68,6 +68,14 @@ private:
 	ID3D11ShaderResourceView* m_pTextureSpecularIBL;
 	ID3D11ShaderResourceView* m_pTextureDiffuseIBL;
 
+	ID3D11ShaderResourceView* m_pPaveTextureDiffuse;
+	ID3D11ShaderResourceView* m_pPaveTextureNormal;
+	ID3D11ShaderResourceView* m_pPaveTextureMetallic;
+	ID3D11ShaderResourceView* m_pPaveTextureRoughness;
+	ID3D11ShaderResourceView* m_pPaveTextureAmbientOcclusion;
+	ID3D11ShaderResourceView* m_pPaveTextureSpecularIBL;
+	ID3D11ShaderResourceView* m_pPaveTextureDiffuseIBL;
+
 	ID3D11SamplerState* m_pSamplerLinear;
 };
 

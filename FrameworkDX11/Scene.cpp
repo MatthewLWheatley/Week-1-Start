@@ -48,6 +48,10 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     if (FAILED(hr))
         return hr;
 
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\PavingStones_Color.dds", nullptr, &m_pPaveTextureDiffuse);
+    if (FAILED(hr))
+        return hr;
+
     D3D11_SAMPLER_DESC sampDesc;
     ZeroMemory(&sampDesc, sizeof(sampDesc));
     sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
@@ -92,6 +96,7 @@ void Scene::update(const float deltaTime)
 {
     // note the pixel shader and the vertex shader have been set by the renderer class calling this method
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
+    m_pImmediateContext->PSSetShaderResources(1, 1, &m_pPaveTextureDiffuse);
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
 
