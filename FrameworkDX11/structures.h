@@ -27,7 +27,6 @@ struct ConstantBuffer2
 	XMMATRIX mProjection;
 	XMFLOAT4 vOutputColor;
 	float textureSelect;
-	float padding[3];
 };
 
 enum LightType

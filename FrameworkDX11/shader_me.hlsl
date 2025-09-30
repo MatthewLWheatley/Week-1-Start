@@ -1,13 +1,13 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
-cbuffer ConstantBuffer : register(b0)
-{
-    matrix World; // World transformation matrix (object to world space)
-    matrix View; // Camera view matrix (world to view space)
-    matrix Projection; // Camera projection matrix (view to clip space)
-    float4 vOutputColor; // Color to be used as output color (e.g., for solid color rendering)
-}
+//cbuffer ConstantBuffer : register(b0)
+//{
+//    matrix World; // World transformation matrix (object to world space)
+//    matrix View; // Camera view matrix (world to view space)
+//    matrix Projection; // Camera projection matrix (view to clip space)
+//    float4 vOutputColor; // Color to be used as output color (e.g., for solid color rendering)
+//}
 
 cbuffer ConstantBuffer2 : register(b2)
 {
@@ -224,9 +224,10 @@ float4 PS_Normal(PS_INPUT IN) : SV_TARGET
         texColor = albedoMap.Sample(samLinear, IN.Tex);
     if (TextureSelector2 == 1) 
         texColor = normalMap.Sample(samLinear, IN.Tex);
-    
+    texColor = float4(1, 1, 1, 1); // Default to white if no texture is selected
+    texColor.r = TextureSelector2;
     // Compute final color (diffuse + specular)
-    float4 diffuseColor = (ambient + diffuse + specular) * texColor;
+    float4 diffuseColor = (ambient + diffuse + specular) * texColor * (TextureSelector2 + 1);
 
     return diffuseColor; // Return final color
 }

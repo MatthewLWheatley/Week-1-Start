@@ -23,22 +23,22 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
 
-    // Create the constant buffer for transformation matrices (view, projection, etc.)
-    D3D11_BUFFER_DESC bd = {};
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBuffer);
-    if (FAILED(hr))
-        return hr;  // If buffer creation fails, return the error
+    //// Create the constant buffer for transformation matrices (view, projection, etc.)
+    //D3D11_BUFFER_DESC bd = {};
+    //bd.Usage = D3D11_USAGE_DEFAULT;
+    //bd.ByteWidth = sizeof(ConstantBuffer);
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = 0;
+    //hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBuffer);
+    //if (FAILED(hr))
+    //    return hr;  // If buffer creation fails, return the error
 
     // Create the constant buffer for transformation matrices (view, projection, etc.)
     D3D11_BUFFER_DESC bd2 = {};
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer2);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
+    bd2.Usage = D3D11_USAGE_DEFAULT;
+    bd2.ByteWidth = sizeof(ConstantBuffer2);
+    bd2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd2.CPUAccessFlags = 0;
     hr = m_pd3dDevice->CreateBuffer(&bd2, nullptr, &m_pConstantBuffer2);
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
@@ -47,11 +47,11 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     setupLightProperties();
 
     // Create the light constant buffer to send light data to the GPU
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(LightPropertiesConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pLightConstantBuffer);
+    bd2.Usage = D3D11_USAGE_DEFAULT;
+    bd2.ByteWidth = sizeof(LightPropertiesConstantBuffer);
+    bd2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd2.CPUAccessFlags = 0;
+    hr = m_pd3dDevice->CreateBuffer(&bd2, nullptr, &m_pLightConstantBuffer);
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
 
@@ -116,7 +116,9 @@ void Scene::update(const float deltaTime)
 {
     // Bind texture resources to pixel shader stages
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
-    m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureNormal);
+    if (m_pTextureNormal != nullptr) {
+        m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureNormal);
+    }
     m_pImmediateContext->PSSetShaderResources(2, 1, &m_pTextureMetallic);
     m_pImmediateContext->PSSetShaderResources(3, 1, &m_pTextureRoughness);
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
@@ -131,10 +133,20 @@ void Scene::update(const float deltaTime)
     cb2.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
     cb2.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
     cb2.vOutputColor = XMFLOAT4(0, 0, 0, 0);  // Placeholder for output color
-	cb2.textureSelect = 0;  // Placeholder for texture selection
+	cb2.textureSelect = 1;  // Placeholder for texture selection
+	time += deltaTime;
+    if (time > 1.0f)
+    {   
+		time = 0.0f;
+        cb2.textureSelect += 1.0f;
+        if (cb2.textureSelect > 3.0f)
+			cb2.textureSelect = 0.0f;
+    }
 
     // Update the light position based on the camera's current position
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
+
+	m_pImmediateContext->UpdateSubresource(m_pConstantBuffer2.Get(), 0, nullptr, &cb2, 0, 0);
 
     // Update the light constant buffer on the GPU
     m_pImmediateContext->UpdateSubresource(m_pLightConstantBuffer.Get(), 0, nullptr, &m_lightProperties, 0, 0);

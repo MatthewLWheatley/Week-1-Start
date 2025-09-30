@@ -524,6 +524,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Text("FPS %d", FPS);
     ImGui::Text("Use WASD to move, RMB to look");
+    ImGui::Text("%f", m_pScene->time);
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Spacing();
 

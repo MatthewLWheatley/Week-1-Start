@@ -41,6 +41,8 @@ public:
 	
 	const LightPropertiesConstantBuffer& getLightProperties() { return m_lightProperties; }
 
+	float time = 0.0f;
+
 private:
 	void setupLightProperties();
 
