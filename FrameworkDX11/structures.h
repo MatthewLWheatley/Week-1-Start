@@ -20,7 +20,15 @@ struct ConstantBuffer
 	unsigned int bone_count;
 };
 
-
+struct ConstantBuffer2 
+{
+	XMMATRIX mWorld;
+	XMMATRIX mView;
+	XMMATRIX mProjection;
+	XMFLOAT4 vOutputColor;
+	float textureSelect;
+	float padding[3];
+};
 
 enum LightType
 {

@@ -661,11 +661,11 @@ void SceneGraph::RenderNode(IRenderingContext &ctx,
         
         // store world and the view / projection in a constant buffer for the vertex shader to use
         data->mWorld = DirectX::XMMatrixTranspose(world);
-        ctx.GetImmediateContext()->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBuffer.Get(), 0, nullptr, data, 0, 0);
+        ctx.GetImmediateContext()->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBuffer2.Get(), 0, nullptr, data, 0, 0);
 
         // Render a cube
         ctx.GetImmediateContext()->VSSetShader(ctx.getDXRenderer()->m_pVertexShader.Get(), nullptr, 0);
-        ctx.GetImmediateContext()->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBuffer.GetAddressOf());
+        ctx.GetImmediateContext()->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBuffer2.GetAddressOf());
 
         primitive.DrawGeometry(ctx, ctx.getDXRenderer()->m_pVertexLayout.Get());
     }

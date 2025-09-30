@@ -9,6 +9,15 @@ cbuffer ConstantBuffer : register(b0)
     float4 vOutputColor; // Color to be used as output color (e.g., for solid color rendering)
 }
 
+cbuffer ConstantBuffer2 : register(b2)
+{
+    matrix World2; // World transformation matrix (object to world space)
+    matrix View2; // Camera view matrix (world to view space)
+    matrix Projection2; // Camera projection matrix (view to clip space)
+    float4 vOutputColor2; // Color to be used as output color (e.g., for solid color rendering)
+    float TextureSelector2; // Selector for different texture types (e.g., albedo, normal, metallic, roughness)
+};
+
 Texture2D albedoMap : register(t0); // Albedo (diffuse) texture
 Texture2D normalMap : register(t1); // Normal map for lighting effects
 Texture2D MetallicMap : register(t2); // Metallic map (PBR)
@@ -210,8 +219,12 @@ float4 PS_Normal(PS_INPUT IN) : SV_TARGET
     float4 specular = lit.Specular;
 
     // Sample albedo texture (diffuse color)
-    float4 texColor = albedoMap.Sample(samLinear, IN.Tex);
-
+    float4 texColor;
+    if (TextureSelector2 == 0) 
+        texColor = albedoMap.Sample(samLinear, IN.Tex);
+    if (TextureSelector2 == 1) 
+        texColor = normalMap.Sample(samLinear, IN.Tex);
+    
     // Compute final color (diffuse + specular)
     float4 diffuseColor = (ambient + diffuse + specular) * texColor;
 

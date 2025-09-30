@@ -33,6 +33,16 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
 
+    // Create the constant buffer for transformation matrices (view, projection, etc.)
+    D3D11_BUFFER_DESC bd2 = {};
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBuffer2);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = m_pd3dDevice->CreateBuffer(&bd2, nullptr, &m_pConstantBuffer2);
+    if (FAILED(hr))
+        return hr;  // If buffer creation fails, return the error
+
     // Set up light properties
     setupLightProperties();
 
@@ -112,10 +122,16 @@ void Scene::update(const float deltaTime)
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
     // Prepare the constant buffer with the updated view and projection matrices
-    ConstantBuffer cb1;
-    cb1.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
-    cb1.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
-    cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);  // Placeholder for output color
+    //ConstantBuffer cb1;
+    //cb1.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
+    //cb1.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
+    //cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);  // Placeholder for output color
+
+    ConstantBuffer2 cb2;
+    cb2.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
+    cb2.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
+    cb2.vOutputColor = XMFLOAT4(0, 0, 0, 0);  // Placeholder for output color
+	cb2.textureSelect = 0;  // Placeholder for texture selection
 
     // Update the light position based on the camera's current position
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
