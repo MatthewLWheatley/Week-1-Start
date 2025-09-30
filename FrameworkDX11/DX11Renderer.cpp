@@ -5,9 +5,10 @@
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"
 #include "d3dcompiler.h"
+#include <iostream>
 
 // TRUE - PBR Rendering / FALSE - Animation Rendering
-constexpr bool PBR_MODE = true;
+constexpr bool PBR_MODE = TRUE;
 
 #pragma region Class lifetime
 
@@ -396,12 +397,29 @@ void DX11Renderer::initIMGUI(HWND hwnd)
 
 void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    float movement = 0.2f;
+    float movement = 0.02f;
     static bool mouseDown = false;
 
     extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
     if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
         return;
+
+    if (GetAsyncKeyState('W')) 
+    {
+        m_pScene->getCamera()->moveForward(movement);
+    }
+    if (GetAsyncKeyState('A'))
+    {
+        m_pScene->getCamera()->strafeLeft(movement);
+    }
+    if (GetAsyncKeyState('S'))
+    {
+        m_pScene->getCamera()->moveBackward(movement);
+    }
+    if (GetAsyncKeyState('D'))
+    {
+        m_pScene->getCamera()->strafeRight(movement);
+    }
 
     switch (message)
     {
@@ -411,18 +429,6 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case 27:
             PostQuitMessage(0);
-            break;
-        case 'W':
-            m_pScene->getCamera()->moveForward(movement);
-            break;
-        case 'A':
-            m_pScene->getCamera()->strafeLeft(movement);
-            break;
-        case 'S':
-            m_pScene->getCamera()->moveBackward(movement);
-            break;
-        case 'D':
-            m_pScene->getCamera()->strafeRight(movement);
             break;
         }
         break;
@@ -465,6 +471,7 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // (You may need to convert POINT to POINTS or use the deltas as is)
         m_pScene->getCamera()->updateLookAt({ static_cast<short>(delta.x), static_cast<short>(delta.y) });
 
+
         // Recenter the cursor
         SetCursorPos(windowCenter.x, windowCenter.y);
     }
@@ -506,8 +513,9 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 
     // YOU will want to modify this for your own debug, controls etc - comment it out to hide the window
     //ImGui::ShowMetricsWindow();
-    ImGui::SetWindowFontScale(4.0f);
+    ImGui::SetWindowFontScale(1.0f);
     ImGui::Text("FPS %d", FPS);
+	ImGui::Text("Use WASD to move, RMB to look");
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Spacing();
 
