@@ -1,170 +1,151 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
-//cbuffer ConstantBuffer : register(b0)
-//{
-//    matrix World; // World transformation matrix (object to world space)
-//    matrix View; // Camera view matrix (world to view space)
-//    matrix Projection; // Camera projection matrix (view to clip space)
-//    float4 vOutputColor; // Color to be used as output color (e.g., for solid color rendering)
-//}
-
-cbuffer ConstantBuffer2 : register(b2)
+cbuffer ConstantBuffer : register(b0)
 {
-    matrix World2; // World transformation matrix (object to world space)
-    matrix View2; // Camera view matrix (world to view space)
-    matrix Projection2; // Camera projection matrix (view to clip space)
-    float4 vOutputColor2; // Color to be used as output color (e.g., for solid color rendering)
-    float TextureSelector2; // Selector for different texture types (e.g., albedo, normal, metallic, roughness)
-};
+   matrix World; // World transformation matrix (object to world space)
+   matrix View; // Camera view matrix (world to view space)
+   matrix Projection; // Camera projection matrix (view to clip space)
+   float4 vOutputColor; // Color to be used as output color (e.g., for solid color rendering)
+}
 
-Texture2D albedoMap : register(t0); // Albedo (diffuse) texture
-Texture2D normalMap : register(t1); // Normal map for lighting effects
-Texture2D MetallicMap : register(t2); // Metallic map (PBR)
-Texture2D RoughnessMap : register(t3); // Roughness map (PBR)
-SamplerState samLinear : register(s0); // Texture sampler for linear filtering
 
-static const float PI = 3.14159265f; // Value of PI (used for angle calculations)
+Texture2D albedoMap : register(t0);
+Texture2D albedoMap2 : register(t1);
+SamplerState samLinear : register(s0);
 
-// Maximum number of lights supported
+static const float PI = 3.14159265f;
+
 #define MAX_LIGHTS 1
-
-// Light types (for future expansion to support more light types)
-#define DIRECTIONAL_LIGHT 
+// Light types.
+#define DIRECTIONAL_LIGHT 0
 #define POINT_LIGHT 1
 #define SPOT_LIGHT 2
 
-// Struct to represent light properties
 struct Light
 {
-    float4 Position; // Light position (used for point and spot lights)
-    float4 Direction; // Light direction (used for directional lights)
-    float4 Color; // Light color (RGBA)
-    float SpotAngle; // Spot light angle
-    float ConstantAttenuation; // Constant attenuation factor (for point lights)
-    float LinearAttenuation; // Linear attenuation factor (for point lights)
-    float QuadraticAttenuation; // Quadratic attenuation factor (for point lights)
-    int LightType; // Light type (e.g., directional, point, spot)
-    bool Enabled; // Flag to enable/disable the light
-    int2 Padding; // Padding to align struct size to 16 bytes
-}; // Total size: 80 bytes
+    float4 Position; // 16 bytes
+										//----------------------------------- (16 byte boundary)
+    float4 Direction; // 16 bytes
+										//----------------------------------- (16 byte boundary)
+    float4 Color; // 16 bytes
+										//----------------------------------- (16 byte boundary)
+    float SpotAngle; // 4 bytes
+    float ConstantAttenuation; // 4 bytes
+    float LinearAttenuation; // 4 bytes
+    float QuadraticAttenuation; // 4 bytes
+										//----------------------------------- (16 byte boundary)
+    int LightType; // 4 bytes
+    bool Enabled; // 4 bytes
+    int2 Padding; // 8 bytes
+										//----------------------------------- (16 byte boundary)
+}; // Total:                           // 80 bytes (5 * 16)
 
-// Constant buffer for light properties
 cbuffer LightProperties : register(b1)
 {
-    float4 EyePosition; // Camera position (for lighting calculations)
-    float4 GlobalAmbient; // Global ambient light color
-    Light Lights[MAX_LIGHTS]; // Array of light sources (with max count defined by MAX_LIGHTS)
+    float4 EyePosition; // 16 bytes
+										//----------------------------------- (16 byte boundary)
+    float4 GlobalAmbient; // 16 bytes
+										//----------------------------------- (16 byte boundary)
+    Light Lights[MAX_LIGHTS]; // 80 * 8 = 640 bytes
 }; 
 
-//--------------------------------------------------------------------------------------
-// Vertex Shader Input and Output Structures
+
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
 {
-    float4 Pos : POSITION; // Vertex position (in object space)
-    float3 Norm : NORMAL; // Normal vector (in object space)
-    float4 Tangent : TANGENT; // Tangent vector (for normal mapping)
-    float2 Tex : TEXCOORD0; // Texture coordinates
-    uint4 Joints : BLENDINDICES0; // Bone indices for skinning
-    float4 Weights : BLENDWEIGHT0; // Bone weights for skinning
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float4 Tangent : TANGENT;
+    float2 Tex : TEXCOORD0;
+    uint4 Joints : BLENDINDICES0;
+    float4 Weights : BLENDWEIGHT0;
 };
 
 struct PS_INPUT
 {
-    float4 Pos : SV_POSITION; // Transformed vertex position (to screen space)
-    float4 worldPos : POSITION; // World-space position (used for lighting)
-    float3 Norm : NORMAL; // Normal vector (in world space)
-    float2 Tex : TEXCOORD0; // Texture coordinates
+    float4 Pos : SV_POSITION;
+    float4 worldPos : POSITION;
+    float3 Norm : NORMAL;
+    float2 Tex : TEXCOORD0;
 };
 
-// Function for diffuse lighting calculation
+
 float4 DoDiffuse(Light light, float3 L, float3 N)
 {
-    float NdotL = max(0, dot(N, L)); // Compute dot product between normal and light direction
-    float diffuseIntensity = max(0, dot(N, L));
-    
-    // Adjust diffuse intensity based on the dot product value
+    float NdotL = max(0, dot(N, L));
+    float diffuseIntensity = max(0, dot(N, L)); // your NdotL value
+
+    // snap to bands
     if (diffuseIntensity > 0.8)
         diffuseIntensity = 1.0;
     else if (diffuseIntensity > 0.4)
         diffuseIntensity = 0.6;
     else
         diffuseIntensity = 0.2;
-
-    return light.Color * NdotL; // Apply light color and intensity
+    return light.Color * NdotL;
 }
 
-// Function for specular lighting calculation
 float4 DoSpecular(Light lightObject, float3 pixelToEyeVectorNormalised, float3 pixelToLightVectorNormalised, float3 Normal)
 {
-    float lightIntensity = saturate(dot(Normal, pixelToLightVectorNormalised)); // Compute intensity
+    float lightIntensity = saturate(dot(Normal, pixelToLightVectorNormalised));
     float4 specular = float4(0, 0, 0, 0);
-
     if (lightIntensity > 0.0f)
     {
-        // Compute reflection vector and apply specular calculation
+		// note the reflection equation requires the *light to pixel* vector - hence we reverse it
         float3 reflection = reflect(-pixelToLightVectorNormalised, Normal);
-        specular = pow(saturate(dot(reflection, pixelToEyeVectorNormalised)), 4); // Specular power of 32
+        specular = pow(saturate(dot(reflection, pixelToEyeVectorNormalised)), 4); // 32 = specular power Material.SpecularPower
     }
 
-    return specular; // Return specular light component
+    return specular;
 }
 
-// Function for light attenuation based on distance
 float DoAttenuation(Light light, float d)
 {
     return 1.0f / (light.ConstantAttenuation + light.LinearAttenuation * d + light.QuadraticAttenuation * d * d);
 }
 
-// Structure to store lighting results (diffuse and specular)
 struct LightingResult
 {
     float4 Diffuse;
     float4 Specular;
 };
 
-// Function to compute lighting for point lights
 LightingResult DoPointLight(Light light, float3 pixelToLightVectorNormalised, float3 pixelToEyeVectorNormalised, float distanceFromPixelToLight, float3 N)
 {
     LightingResult result;
 
-    // Apply attenuation to light
     float attenuation = DoAttenuation(light, distanceFromPixelToLight);
-    attenuation = 1; // (Disabling attenuation for now)
+    attenuation = 1;
 
-    result.Diffuse = DoDiffuse(light, pixelToLightVectorNormalised, N) * attenuation; // Diffuse lighting
-    result.Specular = DoSpecular(light, pixelToEyeVectorNormalised, pixelToLightVectorNormalised, N) * attenuation; // Specular lighting
+    result.Diffuse = DoDiffuse(light, pixelToLightVectorNormalised, N) * attenuation;
+    result.Specular = DoSpecular(light, pixelToEyeVectorNormalised, pixelToLightVectorNormalised, N) * attenuation;
 
     return result;
 }
 
-// Function to compute lighting for all lights
 LightingResult ComputeLighting(float4 pixelToLightVectorNormalised, float4 pixelToEyeVectorNormalised, float distanceFromPixelToLight, float3 N)
 {
-    LightingResult totalResult = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }; // Initialize lighting results
+    LightingResult totalResult = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
 
-    // Iterate through all lights (up to MAX_LIGHTS)
-    [unroll]
+	[unroll]
     for (int i = 0; i < MAX_LIGHTS; ++i)
     {
         LightingResult result = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
 
-        if (!Lights[i].Enabled) // Skip disabled lights
+        if (!Lights[i].Enabled) 
             continue;
-
-        // Compute lighting for this light
+		
         result = DoPointLight(Lights[i], pixelToLightVectorNormalised.xyz, pixelToEyeVectorNormalised.xyz, distanceFromPixelToLight, N);
-        
-        totalResult.Diffuse += result.Diffuse; // Add diffuse component
-        totalResult.Specular += result.Specular; // Add specular component
+		
+        totalResult.Diffuse += result.Diffuse;
+        totalResult.Specular += result.Specular;
     }
 
-    // Saturate the lighting results to prevent overexposure
     totalResult.Diffuse = saturate(totalResult.Diffuse);
     totalResult.Specular = saturate(totalResult.Specular);
 
-    return totalResult; // Return final lighting results
+    return totalResult;
 }
 
 //--------------------------------------------------------------------------------------
@@ -173,69 +154,63 @@ LightingResult ComputeLighting(float4 pixelToLightVectorNormalised, float4 pixel
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
-    
-    // Transform the vertex position from object space to clip space (world -> view -> projection)
     output.Pos = mul(input.Pos, World);
     output.worldPos = output.Pos;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
 
-    // Transform the normal vector from object space to world space
+	// multiply the normal by the world transform (to go from model space to world space)
     output.Norm = mul(float4(input.Norm, 0), World).xyz;
 
-    output.Tex = input.Tex; // Pass the texture coordinates along
-
+    output.Tex = input.Tex;
+    
     return output;
 }
 
 //--------------------------------------------------------------------------------------
-// Pixel Shader: PBR Rendering
+// Pixel Shader
 //--------------------------------------------------------------------------------------
+
 float4 PS_PBR(PS_INPUT IN) : SV_TARGET
 {
-    float3 finalColour = float4(1, 0, 0, 0); // Example final color (red)
-
-    return float4(finalColour, 1.0); // Return final color (without PBR applied)
+    float3 finalColour = float4(1, 0, 0, 0);
+    
+    return float4(finalColour, 1.0);
 }
 
 //--------------------------------------------------------------------------------------
-// Pixel Shader: Normal Map (Lighting Calculation)
+// Pixel Shader
 //--------------------------------------------------------------------------------------
+
 float4 PS_Normal(PS_INPUT IN) : SV_TARGET
 {
-    // Compute vectors from pixel to light and from pixel to eye (camera)
     float4 pixelToLightVectorNormalised = normalize(Lights[0].Position - IN.worldPos);
     float4 pixelToEyeVectorNormalised = normalize(EyePosition - IN.worldPos);
-    float distanceFromPixelToLight = length(IN.worldPos - Lights[0].Position); // Calculate distance
-
-    // Perform lighting computation
+    float distanceFromPixelToLight = length(IN.worldPos - Lights[0].Position);
+	
     LightingResult lit = ComputeLighting(pixelToLightVectorNormalised, pixelToEyeVectorNormalised, distanceFromPixelToLight, normalize(IN.Norm));
 
-    // Ambient light color (could be set globally)
+	// NOTE we aren't using any material properties just yet. 
     float4 ambient = GlobalAmbient;
-    
-    // Add diffuse and specular components from lighting
     float4 diffuse = lit.Diffuse;
     float4 specular = lit.Specular;
 
-    // Sample albedo texture (diffuse color)
     float4 texColor;
-    if (TextureSelector2 == 0) 
-        texColor = albedoMap.Sample(samLinear, IN.Tex);
-    if (TextureSelector2 == 1) 
-        texColor = normalMap.Sample(samLinear, IN.Tex);
-    texColor = float4(1, 1, 1, 1); // Default to white if no texture is selected
-    texColor.r = TextureSelector2;
-    // Compute final color (diffuse + specular)
-    float4 diffuseColor = (ambient + diffuse + specular) * texColor * (TextureSelector2 + 1);
-
-    return diffuseColor; // Return final color
+    float4 texColor2;
+    texColor = albedoMap.Sample(samLinear, IN.Tex);
+    texColor2 = albedoMap2.Sample(samLinear, IN.Tex);
+    
+    texColor = lerp(texColor, texColor2, 0.4);
+	
+    float4 diffuseColor = (ambient + diffuse + specular) * texColor;
+	
+    return diffuseColor;
 }
 
 //--------------------------------------------------------------------------------------
-// Pixel Shader: Solid Color
+// PSSolid - render a solid color
 //--------------------------------------------------------------------------------------
 float4 PSSolid(PS_INPUT input) : SV_Target
 {
-    return vOutputColor; // Return the solid color (set in constant buffer)
+    return vOutputColor;
 }
