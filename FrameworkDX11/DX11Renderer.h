@@ -74,7 +74,8 @@ public: // properties
 	Microsoft::WRL::ComPtr <ID3D11InputLayout>		m_pVertexLayout;
 
 	XMFLOAT4X4				m_matProjection;
-	ConstantBuffer			m_ConstantBufferData;
+	//ConstantBuffer			m_ConstantBufferData;
+	ConstantBufferSwitch	m_ConstantBufferDataSwitch;
 
 
 	Scene* m_pScene;

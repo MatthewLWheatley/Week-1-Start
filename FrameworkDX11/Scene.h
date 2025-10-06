@@ -40,16 +40,21 @@ public:
 	void		update(const float deltaTime);
 	
 	const LightPropertiesConstantBuffer& getLightProperties() { return m_lightProperties; }
+	void setTexture(int textureIndex);
+
+	int textureIndex = 0;
 
 private:
 	void setupLightProperties();
+
 
 public:
 	Camera* m_pCamera;
 	
 	Microsoft::WRL::ComPtr <ID3D11Device>			m_pd3dDevice;
 	Microsoft::WRL::ComPtr <ID3D11DeviceContext>	m_pImmediateContext;
-	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBuffer;
+	//Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBuffer;
+	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBufferSwitch;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pLightConstantBuffer;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pCustomConstantBuffer;
 

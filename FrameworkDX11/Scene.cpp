@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "DDSTextureLoader.h"
+#include <iostream>
 
 // Initialization function for the scene
 HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, DX11Renderer* renderer)
@@ -26,10 +27,10 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     // Create the constant buffer for transformation matrices (view, projection, etc.)
     D3D11_BUFFER_DESC bd = {};
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);
+    bd.ByteWidth = sizeof(ConstantBufferSwitch);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBuffer);
+    hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBufferSwitch);
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
 
@@ -101,21 +102,39 @@ void Scene::setupLightProperties()
     m_lightProperties.Lights[0] = light;  // Store the light in the light properties
 }
 
+void Scene::setTexture(int tId)
+{
+    // This function can be expanded to change textures based on the index
+    // textureIndex is already set by the caller, so don't overwrite it
+    std::cout << "Selected texture index: " << tId << std::endl;
+}
+
 // Update function to update the scene's state
 void Scene::update(const float deltaTime)
 {
     // Bind texture resources to pixel shader stages
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
     m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureNormal);
-    m_pImmediateContext->PSSetShaderResources(2, 1, &m_pTextureMetallic);
-    m_pImmediateContext->PSSetShaderResources(3, 1, &m_pTextureRoughness);
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
     // Prepare the constant buffer with the updated view and projection matrices
-    ConstantBuffer cb1;
-    cb1.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
-    cb1.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
-    cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);  // Placeholder for output color
+    ConstantBufferSwitch cb;
+    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());  // Identity world matrix
+    cb.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
+    cb.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
+    cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);  // Placeholder for output color
+
+    // Add texture cycling
+    static float time = 0;
+    time += deltaTime;
+    cb.TextureSelector = textureIndex;  // Cycle between 0 and 1 every second
+
+
+
+    std::cout << "TextureSelector: " << cb.TextureSelector << std::endl;
+
+    // Update the constant buffer with all the data including TextureSelector
+    m_pImmediateContext->UpdateSubresource(m_pConstantBufferSwitch.Get(), 0, nullptr, &cb, 0, 0);
 
     // Update the light position based on the camera's current position
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);

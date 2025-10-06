@@ -623,7 +623,7 @@ void SceneGraph::RenderFrame(IRenderingContext& ctx, const float deltaTime)
     if (!ctx.IsValid())
         return;
 
-    ConstantBuffer* data = &ctx.getDXRenderer()->m_ConstantBufferData;
+    ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
     data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
     data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
 
@@ -643,7 +643,7 @@ void SceneGraph::RenderNode(IRenderingContext &ctx,
         return;
 
     XMMATRIX world = node.mWorldMtrx * parentWorldMtrx;
-    ConstantBuffer* data = &ctx.getDXRenderer()->m_ConstantBufferData;
+    ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
     if (node.m_skeleton.IsLoaded())
     {
         if (node.m_skeleton.CurrentAnimation() == nullptr)
@@ -659,13 +659,14 @@ void SceneGraph::RenderNode(IRenderingContext &ctx,
         // update the per-node constant buffer
         auto immCtx = ctx.GetImmediateContext();
         
-        // store world and the view / projection in a constant buffer for the vertex shader to use
+        // Don't overwrite the constant buffer - Scene.cpp already updated it with TextureSelector
+        // Just update the world matrix in the renderer's constant buffer data
         data->mWorld = DirectX::XMMatrixTranspose(world);
-        ctx.GetImmediateContext()->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBuffer.Get(), 0, nullptr, data, 0, 0);
 
         // Render a cube
         ctx.GetImmediateContext()->VSSetShader(ctx.getDXRenderer()->m_pVertexShader.Get(), nullptr, 0);
-        ctx.GetImmediateContext()->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBuffer.GetAddressOf());
+        ctx.GetImmediateContext()->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
+        ctx.GetImmediateContext()->PSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
 
         primitive.DrawGeometry(ctx, ctx.getDXRenderer()->m_pVertexLayout.Get());
     }

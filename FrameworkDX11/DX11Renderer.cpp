@@ -397,6 +397,7 @@ void DX11Renderer::initIMGUI(HWND hwnd)
 
 void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+
     float movement = 0.02f;
     static bool mouseDown = false;
 
@@ -420,6 +421,20 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         m_pScene->getCamera()->strafeRight(movement);
     }
+    // Handle M key with proper debouncing
+    static bool mKeyPressed = false;
+    if (GetAsyncKeyState('M'))
+    {
+        if (!mKeyPressed) {  // Only trigger once per press
+            mKeyPressed = true;
+            m_pScene->textureIndex = (m_pScene->textureIndex + 1) % 2;  // Cycle 0->1->0
+            m_pScene->setTexture(m_pScene->textureIndex);
+        }
+    }
+    else
+    {
+        mKeyPressed = false;  // Key released, ready for next press
+    }
 
     switch (message)
     {
@@ -429,6 +444,8 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case 27:
             PostQuitMessage(0);
+            break;
+		case 'm':
             break;
         }
         break;
@@ -516,6 +533,8 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Text("FPS %d", FPS);
 	ImGui::Text("Use WASD to move, RMB to look");
+	ImGui::Text("Press M to change texture");
+	ImGui::Text("Texture Index: %d", m_pScene->textureIndex);
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Spacing();
 

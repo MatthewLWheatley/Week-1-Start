@@ -7,6 +7,8 @@ cbuffer ConstantBuffer : register(b0)
     matrix View; // Camera view matrix (world to view space)
     matrix Projection; // Camera projection matrix (view to clip space)
     float4 vOutputColor; // Color to be used as output color (e.g., for solid color rendering)
+    float TextureSelector; // Texture selector (0 = albedo, 1 = normal)
+    float3 padding; // Padding for alignment
 }
 
 Texture2D albedoMap : register(t0); // Albedo (diffuse) texture
@@ -209,8 +211,16 @@ float4 PS_Normal(PS_INPUT IN) : SV_TARGET
     float4 diffuse = lit.Diffuse;
     float4 specular = lit.Specular;
 
-    // Sample albedo texture (diffuse color)
-    float4 texColor = albedoMap.Sample(samLinear, IN.Tex);
+    // DEBUG: Use solid colors to test TextureSelector
+    float4 texColor = float4(1, 1, 1, 1); // Default white
+    if (TextureSelector < 0.5)
+    {
+        texColor = albedoMap.Sample(samLinear, IN.Tex); // Albedo texture
+    }
+    else
+    {
+        texColor = normalMap.Sample(samLinear, IN.Tex); // Normal texture
+    }
 
     // Compute final color (diffuse + specular)
     float4 diffuseColor = (ambient + diffuse + specular) * texColor;

@@ -107,7 +107,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     PAINTSTRUCT ps;
     HDC hdc;
 
-    gThisApp->getRenderer()->input(hWnd, message, wParam, lParam);
+    if(gThisApp && gThisApp->getRenderer())gThisApp->getRenderer()->input(hWnd, message, wParam, lParam);
 
     switch (message)
     {

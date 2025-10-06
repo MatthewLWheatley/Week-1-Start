@@ -10,17 +10,27 @@ using namespace DirectX;
 //--------------------------------------------------------------------------------------
 
 
-struct ConstantBuffer
+//struct ConstantBuffer
+//{
+//	XMMATRIX mWorld;
+//	XMMATRIX mView;
+//	XMMATRIX mProjection;
+//	XMFLOAT4 vOutputColor;
+//	XMMATRIX boneTransforms[max_bones];
+//	unsigned int bone_count;
+//};
+
+struct ConstantBufferSwitch
 {
 	XMMATRIX mWorld;
 	XMMATRIX mView;
 	XMMATRIX mProjection;
 	XMFLOAT4 vOutputColor;
-	XMMATRIX boneTransforms[max_bones];
+	float TextureSelector;  // Add texture selector
 	unsigned int bone_count;
+	float padding[1];       // Padding to maintain 16-byte alignment
+	XMMATRIX boneTransforms[max_bones];
 };
-
-
 
 enum LightType
 {
