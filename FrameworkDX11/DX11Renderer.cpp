@@ -543,6 +543,13 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
     if (ImGui::DragFloat3("Camera Look", &camRot.x, 0.1f)) {
         m_pScene->getCamera()->setLookDir(camRot);
     }
+
+
+    XMFLOAT4 lightPos = m_pScene->getLightProperties().Lights[0].Position;
+    if (ImGui::DragFloat3("light Pos", &lightPos.x, 0.1f)) {
+		m_pScene->setLightPos(0, lightPos);
+    }
+
     ImGui::Spacing();
 
     // example usage

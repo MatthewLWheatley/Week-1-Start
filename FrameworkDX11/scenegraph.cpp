@@ -626,6 +626,7 @@ void SceneGraph::RenderFrame(IRenderingContext& ctx, const float deltaTime)
     ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
     data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
     data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
+	data->TextureSelector = ctx.getDXRenderer()->m_pScene->textureIndex;
 
     // Scene geometry
     for (auto& node : mRootNodes)

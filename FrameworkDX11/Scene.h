@@ -37,6 +37,8 @@ public:
 	void		cleanUp();
 	Camera*		getCamera() { return m_pCamera; }
 
+	void setLightPos(int lightIndex, XMFLOAT4 pos);
+
 	void		update(const float deltaTime);
 	
 	const LightPropertiesConstantBuffer& getLightProperties() { return m_lightProperties; }

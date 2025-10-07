@@ -118,12 +118,12 @@ public:
 		rightVec = XMVector3Normalize(rightVec);
 
 		// Re-orthogonalize the up vector to be perpendicular to the look direction and right vector
-		upVec = XMVector3Cross(lookDirVec, rightVec);
-		upVec = XMVector3Normalize(upVec);
+		//upVec = XMVector3Cross(lookDirVec, rightVec);
+		//upVec = XMVector3Normalize(upVec);
 
 		// Store the updated vectors back to the class members
 		XMStoreFloat3(&m_lookDir, lookDirVec);
-		XMStoreFloat3(&m_up, upVec);
+		//XMStoreFloat3(&m_up, upVec);
 	}
 
 	void update() { updateViewMatrix(); }
@@ -146,8 +146,7 @@ private:
 		XMVECTOR lookDirVec = XMLoadFloat3(&m_lookDir);
 		XMVECTOR lookAtPoint = posVec + lookDirVec;
 
-		// Use a consistent world up vector (assuming Y-up)
-		XMVECTOR upVec = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMVECTOR upVec = XMLoadFloat3(&m_up);
 
 		XMStoreFloat4x4(&m_viewMatrix, XMMatrixLookAtLH(posVec, lookAtPoint, upVec));
 	}

@@ -21,6 +21,9 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
     bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
+    m_sceneobject2.AddScaleToRoots(10.0f);
+    if (!ok || !ok2)
+		return E_FAIL;  // If loading fails, return an error
 
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
@@ -110,12 +113,19 @@ void Scene::setupLightProperties()
 //    std::cout << "Selected texture index: " << tId << std::endl;
 //}
 
+void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
+{
+    if (lightIndex >= 0 && lightIndex < MAX_LIGHTS) 
+    {
+		m_lightProperties.Lights[lightIndex].Position = pos;
+    }
+}
+
 // Update function to update the scene's state
 void Scene::update(const float deltaTime)
 {
-    XMMATRIX m = XMMatrixTranslation(3,0,0);
-
-    m_sceneobject.SetMatrixToRoots(m); 
+    //m_sceneobject2.SetMatrixToRoots(XMMatrixScaling(.1f, .1f, .1f));
+    m_sceneobject2.SetMatrixToRoots(XMMatrixTranslation( m_lightProperties.Lights[0].Position.x*10, m_lightProperties.Lights[0].Position.y * 10, m_lightProperties.Lights[0].Position.z * 10) * XMMatrixScaling(.1f, .1f, .1f));
 
 
     // Bind texture resources to pixel shader stages
