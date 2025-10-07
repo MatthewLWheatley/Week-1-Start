@@ -20,6 +20,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
+    bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
 
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
@@ -138,13 +139,20 @@ void Scene::update(const float deltaTime)
 
     // Update the light position based on the camera's current position
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
-
+    
     // Update the light constant buffer on the GPU
     m_pImmediateContext->UpdateSubresource(m_pLightConstantBuffer.Get(), 0, nullptr, &m_lightProperties, 0, 0);
     ID3D11Buffer* buf = m_pLightConstantBuffer.Get();
     m_pImmediateContext->PSSetConstantBuffers(1, 1, &buf);
 
+    //XMMATRIX m = XMMatrixTranslation(3,0,0);
+
+	//m_sceneobject.SetMatrixToRoots(m); 
+    m_sceneobject.AddTranslationToRoots({ 1,1,1 });
+
     // Animate and render the scene object
     m_sceneobject.AnimateFrame(m_ctx);  // Update the object's animation
     m_sceneobject.RenderFrame(m_ctx, deltaTime);  // Render the animated object to the screen
+	m_sceneobject2.AnimateFrame(m_ctx);  // Update the second object's animation
+	m_sceneobject2.RenderFrame(m_ctx, deltaTime);  // Render the second animated object to the screen
 }

@@ -167,9 +167,11 @@ public:
     void Animate(IRenderingContext &ctx);
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
+	void SetWorldMtrx(const XMMATRIX& mtrx) { mWorldMtrx = mtrx; }
     Skeleton* GetSkeleton() {
         return &m_skeleton;
     }
+
 
 private:
     friend class SceneGraph;

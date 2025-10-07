@@ -40,6 +40,12 @@ public:
 
 	XMFLOAT3 getPosition() { return m_position; }
 
+	void setPosition(XMFLOAT3 newPos) { m_position = newPos; }
+
+	XMFLOAT3 getLookDir() { return m_lookDir; }
+
+	void setLookDir(XMFLOAT3 newLook) { m_lookDir = newLook; }
+
 	void moveForward(float distance)
 	{
 		// Get the normalized forward vector (camera's look direction)
@@ -136,14 +142,16 @@ public:
 private:
 	void updateViewMatrix() const
 	{
-		// Calculate the look-at point based on the position and look direction
 		XMVECTOR posVec = XMLoadFloat3(&m_position);
 		XMVECTOR lookDirVec = XMLoadFloat3(&m_lookDir);
-		XMVECTOR lookAtPoint = posVec + lookDirVec; // This is the new look-at point
+		XMVECTOR lookAtPoint = posVec + lookDirVec;
 
-		// Update the view matrix to look from the camera's position to the look-at point
-		XMStoreFloat4x4(&m_viewMatrix, XMMatrixLookAtLH(posVec, lookAtPoint, XMLoadFloat3(&m_up)));
+		// Use a consistent world up vector (assuming Y-up)
+		XMVECTOR upVec = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+		XMStoreFloat4x4(&m_viewMatrix, XMMatrixLookAtLH(posVec, lookAtPoint, upVec));
 	}
+
 
 	XMFLOAT3    m_position;
 	XMFLOAT3	m_lookDir;

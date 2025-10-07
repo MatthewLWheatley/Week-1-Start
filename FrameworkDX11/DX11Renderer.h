@@ -21,7 +21,8 @@
 #include "wrl.h"
 #include "structures.h"
 #include <vector>
-
+#include <d3d11_1.h>
+#include "imgui/imgui_impl_dx11.h"
 class Scene;
 
 

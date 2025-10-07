@@ -535,7 +535,15 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 	ImGui::Text("Use WASD to move, RMB to look");
 	ImGui::Text("Press M to change texture");
 	ImGui::Text("Texture Index: %d", m_pScene->textureIndex);
-    ImGui::SetWindowFontScale(1.0f);
+	
+	XMFLOAT3 camPos = m_pScene->getCamera()->getPosition();
+	if(ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f)){
+        m_pScene->getCamera()->setPosition(camPos);
+	}
+    XMFLOAT3 camRot = m_pScene->getCamera()->getLookDir();
+    if (ImGui::DragFloat3("Camera Look", &camRot.x, 0.1f)) {
+        m_pScene->getCamera()->setLookDir(camRot);
+    }
     ImGui::Spacing();
 
     // example usage

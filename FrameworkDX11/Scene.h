@@ -44,6 +44,8 @@ public:
 
 	int textureIndex = 0;
 
+	friend class Dx11Renderer;
+
 private:
 	void setupLightProperties();
 
@@ -62,6 +64,7 @@ public:
 	LightPropertiesConstantBuffer m_lightProperties;
 	IRenderingContext m_ctx;
 	SceneGraph m_sceneobject;
+	SceneGraph m_sceneobject2;
 
 
 private:
