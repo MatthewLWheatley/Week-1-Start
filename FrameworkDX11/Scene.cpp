@@ -103,16 +103,21 @@ void Scene::setupLightProperties()
     m_lightProperties.Lights[0] = light;  // Store the light in the light properties
 }
 
-void Scene::setTexture(int tId)
-{
-    // This function can be expanded to change textures based on the index
-    // textureIndex is already set by the caller, so don't overwrite it
-    std::cout << "Selected texture index: " << tId << std::endl;
-}
+//void Scene::setTexture(int tId)
+//{
+//    // This function can be expanded to change textures based on the index
+//    // textureIndex is already set by the caller, so don't overwrite it
+//    std::cout << "Selected texture index: " << tId << std::endl;
+//}
 
 // Update function to update the scene's state
 void Scene::update(const float deltaTime)
 {
+    XMMATRIX m = XMMatrixTranslation(3,0,0);
+
+    m_sceneobject.SetMatrixToRoots(m); 
+
+
     // Bind texture resources to pixel shader stages
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
     m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureNormal);
@@ -132,25 +137,15 @@ void Scene::update(const float deltaTime)
 
 
 
-    std::cout << "TextureSelector: " << cb.TextureSelector << std::endl;
-
-    // Update the constant buffer with all the data including TextureSelector
     m_pImmediateContext->UpdateSubresource(m_pConstantBufferSwitch.Get(), 0, nullptr, &cb, 0, 0);
 
-    // Update the light position based on the camera's current position
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
     
-    // Update the light constant buffer on the GPU
     m_pImmediateContext->UpdateSubresource(m_pLightConstantBuffer.Get(), 0, nullptr, &m_lightProperties, 0, 0);
     ID3D11Buffer* buf = m_pLightConstantBuffer.Get();
     m_pImmediateContext->PSSetConstantBuffers(1, 1, &buf);
 
-    //XMMATRIX m = XMMatrixTranslation(3,0,0);
 
-	//m_sceneobject.SetMatrixToRoots(m); 
-    m_sceneobject.AddTranslationToRoots({ 1,1,1 });
-
-    // Animate and render the scene object
     m_sceneobject.AnimateFrame(m_ctx);  // Update the object's animation
     m_sceneobject.RenderFrame(m_ctx, deltaTime);  // Render the animated object to the screen
 	m_sceneobject2.AnimateFrame(m_ctx);  // Update the second object's animation

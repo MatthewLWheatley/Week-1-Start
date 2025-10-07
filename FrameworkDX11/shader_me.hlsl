@@ -216,10 +216,12 @@ float4 PS_Normal(PS_INPUT IN) : SV_TARGET
     if (TextureSelector < 0.5)
     {
         texColor = albedoMap.Sample(samLinear, IN.Tex); // Albedo texture
+        texColor.g = 1;
     }
     else
     {
         texColor = normalMap.Sample(samLinear, IN.Tex); // Normal texture
+        texColor.r = 1;
     }
 
     // Compute final color (diffuse + specular)

@@ -40,7 +40,6 @@ public:
 	void		update(const float deltaTime);
 	
 	const LightPropertiesConstantBuffer& getLightProperties() { return m_lightProperties; }
-	void setTexture(int textureIndex);
 
 	int textureIndex = 0;
 

@@ -659,9 +659,9 @@ void SceneGraph::RenderNode(IRenderingContext &ctx,
         // update the per-node constant buffer
         auto immCtx = ctx.GetImmediateContext();
         
-        // Don't overwrite the constant buffer - Scene.cpp already updated it with TextureSelector
-        // Just update the world matrix in the renderer's constant buffer data
+        // store world and the view / projection in a constant buffer for the vertex shader to use
         data->mWorld = DirectX::XMMatrixTranspose(world);
+        ctx.GetImmediateContext()->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.Get(), 0, nullptr, data, 0, 0);
 
         // Render a cube
         ctx.GetImmediateContext()->VSSetShader(ctx.getDXRenderer()->m_pVertexShader.Get(), nullptr, 0);

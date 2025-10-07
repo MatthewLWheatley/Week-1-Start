@@ -428,7 +428,6 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (!mKeyPressed) {  // Only trigger once per press
             mKeyPressed = true;
             m_pScene->textureIndex = (m_pScene->textureIndex + 1) % 2;  // Cycle 0->1->0
-            m_pScene->setTexture(m_pScene->textureIndex);
         }
     }
     else
