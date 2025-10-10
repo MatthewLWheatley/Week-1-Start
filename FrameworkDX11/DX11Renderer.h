@@ -72,6 +72,7 @@ public: // properties
 
 	Microsoft::WRL::ComPtr <ID3D11VertexShader>		m_pVertexShader;
 	Microsoft::WRL::ComPtr <ID3D11PixelShader>		m_pPixelShader;
+	Microsoft::WRL::ComPtr <ID3D11PixelShader>		m_pPixelSolidShader;
 	Microsoft::WRL::ComPtr <ID3D11InputLayout>		m_pVertexLayout;
 
 	XMFLOAT4X4				m_matProjection;

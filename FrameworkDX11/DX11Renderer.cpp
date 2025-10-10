@@ -18,6 +18,7 @@ HRESULT DX11Renderer::init(HWND hwnd)
 
     m_pScene = new Scene;
     m_pScene->init(hwnd, m_pd3dDevice, m_pImmediateContext, this);
+	m_pScene->m_pRenderer = this;
 
     RECT rc;
     GetClientRect(hwnd, &rc);
@@ -96,6 +97,27 @@ HRESULT DX11Renderer::init(HWND hwnd)
     if (FAILED(hr))
         return hr;
 
+    // Compile the pixel shader
+    pPSBlob = nullptr;
+
+    if constexpr (PBR_MODE)
+        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
+    else
+        hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "PS", "ps_4_0", &pPSBlob);
+
+
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+        return hr;
+    }
+
+    // Create the pixel shader
+    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelSolidShader);
+    pPSBlob->Release();
+    if (FAILED(hr))
+        return hr;
 
     return hr;
 }
@@ -518,7 +540,6 @@ void DX11Renderer::CentreMouseInWindow(HWND hWnd)
     // Move the cursor to the center of the screen
     SetCursorPos(center.x, center.y);
 }
-
 
 void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 {

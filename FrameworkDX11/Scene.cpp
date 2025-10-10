@@ -1,6 +1,7 @@
 #include "Scene.h"
 #include "DDSTextureLoader.h"
 #include <iostream>
+#include "DX11Renderer.h"
 
 // Initialization function for the scene
 HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, DX11Renderer* renderer)
@@ -138,12 +139,13 @@ void Scene::update(const float deltaTime)
     cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());  // Identity world matrix
     cb.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
     cb.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
-    cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);  // Placeholder for output color
+    cb.vOutputColor = XMFLOAT4(1, 1, 1, 1);  // Placeholder for output color
 
-    // Add texture cycling
-    static float time = 0;
-    time += deltaTime;
-    cb.TextureSelector = textureIndex;  // Cycle between 0 and 1 every second
+    cb.TextureSelector = textureIndex;
+
+
+
+
 
 
 
@@ -156,8 +158,10 @@ void Scene::update(const float deltaTime)
     m_pImmediateContext->PSSetConstantBuffers(1, 1, &buf);
 
 
-    m_sceneobject.AnimateFrame(m_ctx);  // Update the object's animation
-    m_sceneobject.RenderFrame(m_ctx, deltaTime);  // Render the animated object to the screen
-	m_sceneobject2.AnimateFrame(m_ctx);  // Update the second object's animation
-	m_sceneobject2.RenderFrame(m_ctx, deltaTime);  // Render the second animated object to the screen
+    m_sceneobject.AnimateFrame(m_ctx);
+    m_sceneobject.RenderFrame(m_ctx, deltaTime);
+    
+    m_pImmediateContext->PSSetShader(m_pRenderer->m_pPixelSolidShader.Get(),nullptr,0);
+    m_sceneobject2.AnimateFrame(m_ctx);
+    m_sceneobject2.RenderFrame(m_ctx, deltaTime);
 }

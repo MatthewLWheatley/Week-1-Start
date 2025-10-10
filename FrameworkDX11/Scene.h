@@ -47,6 +47,8 @@ public:
 
 	friend class Dx11Renderer;
 
+	DX11Renderer* m_pRenderer = nullptr;
+
 private:
 	void setupLightProperties();
 
