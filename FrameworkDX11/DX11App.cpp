@@ -55,7 +55,7 @@ HRESULT DX11App::initWindow(HINSTANCE hInstance, int nCmdShow)
 
     // Create window
     m_hInst = hInstance;
-    RECT rc = { 0, 0, 1280, 720 };
+    RECT rc = { 0, 0, 1920, 1080 };
 
     m_viewWidth = SCREEN_WIDTH;
     m_viewHeight = SCREEN_HEIGHT;
