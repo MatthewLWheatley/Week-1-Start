@@ -18,7 +18,6 @@ HRESULT DX11Renderer::init(HWND hwnd)
 
     m_pScene = new Scene;
     m_pScene->init(hwnd, m_pd3dDevice, m_pImmediateContext, this);
-	m_pScene->m_pRenderer = this;
 
     RECT rc;
     GetClientRect(hwnd, &rc);
@@ -79,7 +78,7 @@ HRESULT DX11Renderer::init(HWND hwnd)
     ID3DBlob* pPSBlob = nullptr;
 
     if constexpr (PBR_MODE)
-        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PS_Normal", "ps_4_0", &pPSBlob);
+        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PS_PBR", "ps_4_0", &pPSBlob);
     else
         hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "PS", "ps_4_0", &pPSBlob);
 
@@ -100,12 +99,8 @@ HRESULT DX11Renderer::init(HWND hwnd)
     // Compile the pixel shader
     pPSBlob = nullptr;
 
-    if constexpr (PBR_MODE)
-        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
-    else
-        hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "PS", "ps_4_0", &pPSBlob);
-
-
+    hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
+    
     if (FAILED(hr))
     {
         MessageBox(nullptr,

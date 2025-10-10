@@ -11,10 +11,14 @@ cbuffer ConstantBuffer : register(b0)
     float3 padding; // Padding for alignment
 }
 
+cbuffer ConstantBuffer : register(b2)
+{
+    float4 vOutputColor2; // Color to be used as output color (e.g., for solid color rendering)
+}
+
 Texture2D albedoMap : register(t0); // Albedo (diffuse) texture
-Texture2D normalMap : register(t1); // Normal map for lighting effects
-Texture2D MetallicMap : register(t2); // Metallic map (PBR)
-Texture2D RoughnessMap : register(t3); // Roughness map (PBR)
+Texture2D MetallicMap : register(t1); // Normal map for lighting effects
+Texture2D RoughnessMap : register(t2); // Roughness map (PBR)
 SamplerState samLinear : register(s0); // Texture sampler for linear filtering
 
 static const float PI = 3.14159265f; // Value of PI (used for angle calculations)
@@ -181,15 +185,66 @@ PS_INPUT VS(VS_INPUT input)
     return output;
 }
 
+
+float3 FresnelSchlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+float NormalDistrobution(float roughness, float3 N, float3 H)
+{
+    float NdotH = max(dot(N, H), 0.0);
+    float a2 = roughness * roughness;
+    float denom = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
+    return a2 / (PI * (denom * denom));
+}
+
+float G_sub(float roughness, float3 N, float3 V)
+{
+    float k = ((roughness + 1.0) * (roughness + 1.0)) / 8.0;
+    float NdotV = max(dot(N, V), 0.0);
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
 //--------------------------------------------------------------------------------------
 // Pixel Shader: PBR Rendering
 //--------------------------------------------------------------------------------------
 float4 PS_PBR(PS_INPUT IN) : SV_TARGET
 {
-    float3 finalColour = float4(1, 0, 0, 0); // Example final color (red)
+    float3 finalColour = float4(0, 0, 0, 0);
+    float3 albedo = albedoMap.Sample(samLinear, IN.Tex);
+    float metallic = MetallicMap.Sample(samLinear, IN.Tex).r;
+    float roughness = RoughnessMap.Sample(samLinear, IN.Tex).r;
+    
+    float3 N = normalize(IN.Norm);
+    float3 V = normalize(EyePosition - IN.worldPos);
+    float3 L = normalize(Lights[0].Position - IN.worldPos); 
+    float3 H = normalize(V + L); 
+    
+    float cosTheta = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    
+    float3 F0 = float3(0.04, 0.04, 0.04); 
+    F0 = lerp(F0, albedo, metallic);
 
-    return float4(finalColour, 1.0); // Return final color (without PBR applied)
+    float3 F = FresnelSchlick(cosTheta, F0);
+    float D = NormalDistrobution(roughness, N, H);
+    float G = G_sub(roughness, N, V) * G_sub(roughness, N, L);
+    float3 bottom = (4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0));
+    float3 BRDF = (F * G * D) / bottom;
+    
+    float3 kD = (float3(1, 1, 1) - F) * (1 - metallic);
+    float3 Diffuse = kD * (albedo / PI);
+    
+    float3 color = (Diffuse + BRDF) * NdotL;
+    
+    color = color * Lights[0].Color.xyz;
+    
+    float3 ambient = float3(0.01, 0.01, 0.01) * albedo;
+    
+    return float4(color + ambient,1);
 }
+
 
 //--------------------------------------------------------------------------------------
 // Pixel Shader: Normal Map (Lighting Calculation)
@@ -216,12 +271,10 @@ float4 PS_Normal(PS_INPUT IN) : SV_TARGET
     if (TextureSelector < 0.5)
     {
         texColor = albedoMap.Sample(samLinear, IN.Tex); // Albedo texture
-        texColor.g = 1;
     }
     else
     {
-        texColor = normalMap.Sample(samLinear, IN.Tex); // Normal texture
-        texColor.r = 1;
+        texColor = MetallicMap.Sample(samLinear, IN.Tex); // Normal texture
     }
 
     // Compute final color (diffuse + specular)
@@ -235,5 +288,5 @@ float4 PS_Normal(PS_INPUT IN) : SV_TARGET
 //--------------------------------------------------------------------------------------
 float4 PSSolid(PS_INPUT input) : SV_Target
 {
-    return vOutputColor; // Return the solid color (set in constant buffer)
+    return vOutputColor2; // Return the solid color (set in constant buffer)
 }

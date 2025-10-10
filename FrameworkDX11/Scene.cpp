@@ -6,6 +6,7 @@
 // Initialization function for the scene
 HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, DX11Renderer* renderer)
 {
+	m_pRenderer = renderer;
     // Store the device and context pointers for later use
     m_pd3dDevice = device;
     m_pImmediateContext = context;
@@ -39,6 +40,15 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
 
+    bd = {};
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBufferlight);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBufferlight);
+    if (FAILED(hr))
+        return hr;  // If buffer creation fails, return the error
+
     // Set up light properties
     setupLightProperties();
 
@@ -52,13 +62,10 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
         return hr;  // If buffer creation fails, return the error
 
     // Load texture resources
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\PavingStones_Color.dds", nullptr, &m_pTextureDiffuse);
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr))
         return hr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\PavingStones_NormalDX.dds", nullptr, &m_pTextureNormal);
-    if (FAILED(hr))
-        return hr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\PavingStones_Color.dds", nullptr, &m_pTextureMetallic);
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_metal.dds", nullptr, &m_pTextureMetallic);
     if (FAILED(hr))
         return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
@@ -99,7 +106,7 @@ void Scene::setupLightProperties()
     light.QuadraticAttenuation = 1;
 
     // Set up the light position based on the camera's position
-    XMFLOAT4 LightPosition(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
+    XMFLOAT4 LightPosition(5, 5, -6, 1);
     light.Position = LightPosition;
 
     // Update the light properties struct
@@ -131,7 +138,8 @@ void Scene::update(const float deltaTime)
 
     // Bind texture resources to pixel shader stages
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
-    m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureNormal);
+    m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureMetallic);
+    m_pImmediateContext->PSSetShaderResources(2, 1, &m_pTextureRoughness);
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
     // Prepare the constant buffer with the updated view and projection matrices
@@ -139,7 +147,7 @@ void Scene::update(const float deltaTime)
     cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());  // Identity world matrix
     cb.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
     cb.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
-    cb.vOutputColor = XMFLOAT4(1, 1, 1, 1);  // Placeholder for output color
+    cb.vOutputColor = XMFLOAT4(0, 0, 1, 1);  // Placeholder for output color
 
     cb.TextureSelector = textureIndex;
 
@@ -160,8 +168,14 @@ void Scene::update(const float deltaTime)
 
     m_sceneobject.AnimateFrame(m_ctx);
     m_sceneobject.RenderFrame(m_ctx, deltaTime);
-    
+
+	ConstantBufferlight cb2;
+    cb2.vOutputColor2 = XMFLOAT4(0, 0, 1, 1);
+    m_pImmediateContext->UpdateSubresource(m_pConstantBufferlight.Get(), 0, nullptr, &cb2, 0, 0);
+
     m_pImmediateContext->PSSetShader(m_pRenderer->m_pPixelSolidShader.Get(),nullptr,0);
+    ID3D11Buffer* cbSwitch = m_pConstantBufferlight.Get();
+    m_pImmediateContext->PSSetConstantBuffers(2, 1, &cbSwitch);
     m_sceneobject2.AnimateFrame(m_ctx);
     m_sceneobject2.RenderFrame(m_ctx, deltaTime);
 }

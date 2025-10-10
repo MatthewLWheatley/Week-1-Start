@@ -32,6 +32,11 @@ struct ConstantBufferSwitch
 	XMMATRIX boneTransforms[max_bones];
 };
 
+struct ConstantBufferlight
+{
+	XMFLOAT4 vOutputColor2;
+};
+
 enum LightType
 {
 	DirectionalLight = 0,
