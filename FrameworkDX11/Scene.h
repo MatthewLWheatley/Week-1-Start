@@ -69,6 +69,7 @@ public:
 	SceneGraph m_sceneobject;
 	SceneGraph m_sceneobject2;
 
+	vector<SceneGraph*> m_objects = vector<SceneGraph*>(100);
 
 private:
 	ID3D11ShaderResourceView* m_pTextureDiffuse;

@@ -556,7 +556,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
         m_pScene->getCamera()->setPosition(camPos);
 	}
     XMFLOAT3 camRot = m_pScene->getCamera()->getLookDir();
-    if (ImGui::DragFloat3("Camera Look", &camRot.x, 0.1f)) {
+    if (ImGui::DragFloat2("Camera Look", &camRot.x, 0.1f)) {
         m_pScene->getCamera()->setLookDir(camRot);
     }
 
@@ -564,6 +564,11 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
     XMFLOAT4 lightPos = m_pScene->getLightProperties().Lights[0].Position;
     if (ImGui::DragFloat3("light Pos", &lightPos.x, 0.1f)) {
 		m_pScene->setLightPos(0, lightPos);
+    }
+
+    lightPos = m_pScene->getLightProperties().Lights[1].Position;
+    if (ImGui::DragFloat3("light Pos2", &lightPos.x, 0.1f)) {
+        m_pScene->setLightPos(1, lightPos);
     }
 
     ImGui::Spacing();

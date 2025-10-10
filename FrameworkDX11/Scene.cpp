@@ -21,8 +21,11 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     // Initialize the context, renderer, and scene object
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
+    
     bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
     bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
+	m_objects[0] = &m_sceneobject;
+	m_objects[1] = &m_sceneobject2;
     m_sceneobject2.AddScaleToRoots(10.0f);
     if (!ok || !ok2)
 		return E_FAIL;  // If loading fails, return an error
@@ -99,19 +102,33 @@ void Scene::setupLightProperties()
     Light light;
     light.Enabled = static_cast<int>(true);  // Enable the light
     light.LightType = PointLight;  // Set light type to point light
-    light.Color = XMFLOAT4(1, 1, 1, 1);  // Set the light color to white
+    light.Color = XMFLOAT4(1, 0, 0, 1);  // Set the light color to white
     light.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
     light.ConstantAttenuation = 1.0f;  // Attenuation factors
-    light.LinearAttenuation = 1;
-    light.QuadraticAttenuation = 1;
+    light.LinearAttenuation = 0.0045f;
+    light.QuadraticAttenuation = 0.00075f;
+
+	Light light2;
+	light2.Enabled = static_cast<int>(true);  // Enable the light
+	light2.LightType = PointLight;  // Set light type to point light
+	light2.Color = XMFLOAT4(0, 0, 1, 1);  // Set the light color to white
+	light2.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
+	light2.ConstantAttenuation = 1.0f;  // Attenuation factors
+	light2.LinearAttenuation = 0.0045f;
+	light2.QuadraticAttenuation = 0.00075f;
 
     // Set up the light position based on the camera's position
     XMFLOAT4 LightPosition(5, 5, -6, 1);
     light.Position = LightPosition;
+    
+    LightPosition = XMFLOAT4(-5, 5, -6, 1);
+    light2.Position = LightPosition;
+
 
     // Update the light properties struct
-    m_lightProperties.EyePosition = LightPosition;
+    m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
     m_lightProperties.Lights[0] = light;  // Store the light in the light properties
+    m_lightProperties.Lights[1] = light2;  // Store the light in the light properties
 }
 
 //void Scene::setTexture(int tId)
