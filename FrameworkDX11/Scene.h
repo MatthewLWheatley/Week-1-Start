@@ -44,6 +44,7 @@ public:
 	const LightPropertiesConstantBuffer& getLightProperties() { return m_lightProperties; }
 
 	int textureIndex = 0;
+	XMFLOAT3 albedo = XMFLOAT3(1.0f, 1.0f, 1.0f);
 
 	friend class Dx11Renderer;
 

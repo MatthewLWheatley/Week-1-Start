@@ -222,6 +222,8 @@ public:
 
     void AnimateFrame(IRenderingContext& ctx);
 
+	XMMATRIX GetMatrixOfRoot() const;
+    std::vector<SceneNode>      mRootNodes;
 
 private:
 
@@ -265,7 +267,6 @@ private:
     SceneId               mSceneId;
 
     // Geometry
-    std::vector<SceneNode>      mRootNodes;
 
     // Shaders
     ID3D11VertexShader*         mVertexShader = nullptr;

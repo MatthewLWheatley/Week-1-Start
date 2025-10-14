@@ -22,7 +22,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     
-    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
+    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\box.gltf");
     bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
 	m_objects[0] = &m_sceneobject;
 	m_objects[1] = &m_sceneobject2;
@@ -65,7 +65,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
         return hr;  // If buffer creation fails, return the error
 
     // Load texture resources
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
+    /*hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr))
         return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_metal.dds", nullptr, &m_pTextureMetallic);
@@ -73,7 +73,29 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
         return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
     if (FAILED(hr))
+        return hr;*/
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_albedo.dds", nullptr, &m_pTextureDiffuse);
+    if (FAILED(hr))
         return hr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_metallic.dds", nullptr, &m_pTextureMetallic);
+    if (FAILED(hr))
+        return hr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_rough.dds", nullptr, &m_pTextureRoughness);
+    if (FAILED(hr))
+        return hr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\SpecularCM.dds", nullptr, &m_pTextureSpecularIBL);
+    if (FAILED(hr))
+        return hr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\DiffuseCM.dds", nullptr, &m_pTextureDiffuseIBL);
+    if (FAILED(hr))
+        return hr;
+
+
+    // place this where other textures are sent to the pixel shader
+
+    m_pImmediateContext->PSSetShaderResources(5, 1, &m_pTextureSpecularIBL);
+
+    m_pImmediateContext->PSSetShaderResources(6, 1, &m_pTextureDiffuseIBL);
 
     // Set up a sampler state for texture sampling (anisotropic filtering)
     D3D11_SAMPLER_DESC sampDesc;
@@ -99,10 +121,23 @@ void Scene::cleanUp()
 // Function to set up lighting properties
 void Scene::setupLightProperties()
 {
+    Light lightBack;
+    lightBack.Enabled = static_cast<int>(false);  // Enable the light
+    lightBack.LightType = PointLight;  // Set light type to point light
+    lightBack.Color = XMFLOAT4(0, 0, 0, 0);  // Set the light color to white
+    lightBack.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
+    lightBack.ConstantAttenuation = 0.0f;  // Attenuation factors
+    lightBack.LinearAttenuation = 0.00f;
+    lightBack.QuadraticAttenuation = 0.0f;
+    for (int x = 0; x < MAX_LIGHTS; x++) 
+    {
+		m_lightProperties.Lights[x] = lightBack;
+    }
+
     Light light;
     light.Enabled = static_cast<int>(true);  // Enable the light
     light.LightType = PointLight;  // Set light type to point light
-    light.Color = XMFLOAT4(1, 0, 0, 1);  // Set the light color to white
+    light.Color = XMFLOAT4(1, 1, 1, 1);  // Set the light color to white
     light.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
     light.ConstantAttenuation = 1.0f;  // Attenuation factors
     light.LinearAttenuation = 0.0045f;
@@ -111,7 +146,7 @@ void Scene::setupLightProperties()
 	Light light2;
 	light2.Enabled = static_cast<int>(true);  // Enable the light
 	light2.LightType = PointLight;  // Set light type to point light
-	light2.Color = XMFLOAT4(0, 0, 1, 1);  // Set the light color to white
+	light2.Color = XMFLOAT4(1, 1, 1, 1);  // Set the light color to white
 	light2.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
 	light2.ConstantAttenuation = 1.0f;  // Attenuation factors
 	light2.LinearAttenuation = 0.0045f;
@@ -129,6 +164,7 @@ void Scene::setupLightProperties()
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
     m_lightProperties.Lights[0] = light;  // Store the light in the light properties
     m_lightProperties.Lights[1] = light2;  // Store the light in the light properties
+    
 }
 
 //void Scene::setTexture(int tId)
@@ -150,13 +186,16 @@ void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
 void Scene::update(const float deltaTime)
 {
     //m_sceneobject2.SetMatrixToRoots(XMMatrixScaling(.1f, .1f, .1f));
-    m_sceneobject2.SetMatrixToRoots(XMMatrixTranslation( m_lightProperties.Lights[0].Position.x*10, m_lightProperties.Lights[0].Position.y * 10, m_lightProperties.Lights[0].Position.z * 10) * XMMatrixScaling(.1f, .1f, .1f));
+    /*m_sceneobject2.SetMatrixToRoots(XMMatrixTranslation( m_lightProperties.Lights[0].Position.x*10, m_lightProperties.Lights[0].Position.y * 10, m_lightProperties.Lights[0].Position.z * 10) * XMMatrixScaling(.1f, .1f, .1f));*/
 
 
     // Bind texture resources to pixel shader stages
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
     m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureMetallic);
     m_pImmediateContext->PSSetShaderResources(2, 1, &m_pTextureRoughness);
+	m_pImmediateContext->PSSetShaderResources(3, 1, &m_pTextureDiffuseIBL);
+	m_pImmediateContext->PSSetShaderResources(4, 1, &m_pTextureSpecularIBL);
+
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
 
     // Prepare the constant buffer with the updated view and projection matrices
@@ -166,7 +205,8 @@ void Scene::update(const float deltaTime)
     cb.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
     cb.vOutputColor = XMFLOAT4(0, 0, 1, 1);  // Placeholder for output color
 
-    cb.TextureSelector = textureIndex;
+	cb.frank = XMFLOAT4(albedo.x, albedo.y, albedo.z, 1.0f);
+
 
 
 

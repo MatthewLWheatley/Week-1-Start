@@ -536,6 +536,9 @@ void DX11Renderer::CentreMouseInWindow(HWND hWnd)
     SetCursorPos(center.x, center.y);
 }
 
+ImGuiWindowFlags window_flags = 0;
+bool* p_open;
+
 void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 {
     // Start the Dear ImGui frame
@@ -559,17 +562,49 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
     if (ImGui::DragFloat2("Camera Look", &camRot.x, 0.1f)) {
         m_pScene->getCamera()->setLookDir(camRot);
     }
-
-
-    XMFLOAT4 lightPos = m_pScene->getLightProperties().Lights[0].Position;
-    if (ImGui::DragFloat3("light Pos", &lightPos.x, 0.1f)) {
-		m_pScene->setLightPos(0, lightPos);
+    XMFLOAT3 clr = m_pScene->albedo;
+    if (ImGui::ColorEdit3("Color", &clr.x)) 
+    {
+		m_pScene->albedo = clr;
     }
 
-    lightPos = m_pScene->getLightProperties().Lights[1].Position;
-    if (ImGui::DragFloat3("light Pos2", &lightPos.x, 0.1f)) {
-        m_pScene->setLightPos(1, lightPos);
+
+    ImGui::Begin("Window A");
+    for (int x = 0; x < m_pScene->m_objects.size(); x++) 
+    {
+		if (!m_pScene->m_objects[x]) continue;
+        std::string objName = "Object " + std::to_string(x);
+        if (ImGui::CollapsingHeader(objName.c_str())) 
+        {
+            XMMATRIX objPos = m_pScene->m_objects[x]->GetMatrixOfRoot();
+			XMFLOAT3 objPosF;
+			XMStoreFloat3(&objPosF, objPos.r[3]);
+
+
+            if (ImGui::DragFloat3(("Position##" + std::to_string(x)).c_str(), &objPosF.x, 0.1f)) {
+				m_pScene->m_objects[x]->AddMatrixToRoots(XMMatrixTranslation(objPosF.x, objPosF.y, objPosF.z));
+                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(XMMatrixTranslation(objPosF.x, objPosF.y, objPosF.z));
+            }
+		}
     }
+    ImGui::End();
+
+    ImGui::Begin("Window B");
+    for (int x = 0; x < MAX_LIGHTS; x++)
+    {
+        if (!m_pScene->m_lightProperties.Lights[x].Enabled) continue;
+        std::string objName = "Light " + std::to_string(x);
+        if (ImGui::CollapsingHeader(objName.c_str()))
+        {
+            XMFLOAT4 objPos = m_pScene->m_lightProperties.Lights[x].Position;
+
+
+            if (ImGui::DragFloat3(("LPosition##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
+                m_pScene->m_lightProperties.Lights[x].Position = objPos;
+            }
+        }
+    }
+    ImGui::End();
 
     ImGui::Spacing();
 

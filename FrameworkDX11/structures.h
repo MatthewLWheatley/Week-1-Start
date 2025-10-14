@@ -26,10 +26,7 @@ struct ConstantBufferSwitch
 	XMMATRIX mView;
 	XMMATRIX mProjection;
 	XMFLOAT4 vOutputColor;
-	float TextureSelector;  // Add texture selector
-	unsigned int bone_count;
-	float padding[1];       // Padding to maintain 16-byte alignment
-	XMMATRIX boneTransforms[max_bones];
+	XMFLOAT4 frank;
 };
 
 struct ConstantBufferlight

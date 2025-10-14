@@ -384,6 +384,11 @@ void SceneGraph::AnimateFrame(IRenderingContext& ctx)
         node.Animate(ctx);
 }
 
+XMMATRIX SceneGraph::GetMatrixOfRoot() const
+{
+    return mRootNodes[0].GetWorldMtrx();
+}
+
 bool SceneGraph::LoadSphere(IRenderingContext& ctx)
 {
     mRootNodes.clear();
@@ -626,7 +631,7 @@ void SceneGraph::RenderFrame(IRenderingContext& ctx, const float deltaTime)
     ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
     data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
     data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
-	data->TextureSelector = ctx.getDXRenderer()->m_pScene->textureIndex;
+	data->frank = XMFLOAT4(ctx.getDXRenderer()->m_pScene->albedo.x, ctx.getDXRenderer()->m_pScene->albedo.y, ctx.getDXRenderer()->m_pScene->albedo.z, 1.0f);
 
     // Scene geometry
     for (auto& node : mRootNodes)
@@ -650,8 +655,6 @@ void SceneGraph::RenderNode(IRenderingContext &ctx,
         if (node.m_skeleton.CurrentAnimation() == nullptr)
             node.m_skeleton.PlayAnimation(0);
         node.m_skeleton.Update(deltaTime);
-        data->bone_count = node.m_skeleton.GetBoneCount();
-        node.m_skeleton.GetSkinningMatrices(data->boneTransforms, max_bones);
     }
 
     // Draw current node
