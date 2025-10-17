@@ -27,6 +27,10 @@ struct ConstantBufferSwitch
 	XMMATRIX mProjection;
 	XMFLOAT4 vOutputColor;
 	XMFLOAT4 frank;
+	float metal;
+	float rough;
+	float type;
+	float textureSelect;
 };
 
 struct ConstantBufferlight

@@ -22,7 +22,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     
-    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\box.gltf");
+    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
     bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
 	m_objects[0] = &m_sceneobject;
 	m_objects[1] = &m_sceneobject2;
@@ -65,7 +65,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
         return hr;  // If buffer creation fails, return the error
 
     // Load texture resources
-    /*hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr))
         return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_metal.dds", nullptr, &m_pTextureMetallic);
@@ -73,14 +73,14 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
         return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
     if (FAILED(hr))
-        return hr;*/
+        return hr;/*
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_albedo.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr))
         return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_metallic.dds", nullptr, &m_pTextureMetallic);
     if (FAILED(hr))
         return hr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_rough.dds", nullptr, &m_pTextureRoughness);
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_rough.dds", nullptr, &m_pTextureRoughness);*/
     if (FAILED(hr))
         return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\SpecularCM.dds", nullptr, &m_pTextureSpecularIBL);
@@ -121,18 +121,6 @@ void Scene::cleanUp()
 // Function to set up lighting properties
 void Scene::setupLightProperties()
 {
-    Light lightBack;
-    lightBack.Enabled = static_cast<int>(false);  // Enable the light
-    lightBack.LightType = PointLight;  // Set light type to point light
-    lightBack.Color = XMFLOAT4(0, 0, 0, 0);  // Set the light color to white
-    lightBack.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
-    lightBack.ConstantAttenuation = 0.0f;  // Attenuation factors
-    lightBack.LinearAttenuation = 0.00f;
-    lightBack.QuadraticAttenuation = 0.0f;
-    for (int x = 0; x < MAX_LIGHTS; x++) 
-    {
-		m_lightProperties.Lights[x] = lightBack;
-    }
 
     Light light;
     light.Enabled = static_cast<int>(true);  // Enable the light
@@ -158,7 +146,11 @@ void Scene::setupLightProperties()
     
     LightPosition = XMFLOAT4(-5, 5, -6, 1);
     light2.Position = LightPosition;
-
+    for (int x = 0; x < MAX_LIGHTS; x++)
+    {
+        m_lightProperties.Lights[x] = light2;
+        m_lightProperties.Lights[x].Enabled = false;
+    }
 
     // Update the light properties struct
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
@@ -206,6 +198,10 @@ void Scene::update(const float deltaTime)
     cb.vOutputColor = XMFLOAT4(0, 0, 1, 1);  // Placeholder for output color
 
 	cb.frank = XMFLOAT4(albedo.x, albedo.y, albedo.z, 1.0f);
+    cb.metal = metal;
+    cb.rough = rough;
+    cb.type = type;
+    cb.textureSelect = textureSelect;
 
 
 

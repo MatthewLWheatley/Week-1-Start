@@ -632,6 +632,10 @@ void SceneGraph::RenderFrame(IRenderingContext& ctx, const float deltaTime)
     data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
     data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
 	data->frank = XMFLOAT4(ctx.getDXRenderer()->m_pScene->albedo.x, ctx.getDXRenderer()->m_pScene->albedo.y, ctx.getDXRenderer()->m_pScene->albedo.z, 1.0f);
+    data->metal = ctx.getDXRenderer()->m_pScene->metal;
+    data->rough = ctx.getDXRenderer()->m_pScene->rough;
+    data->type = ctx.getDXRenderer()->m_pScene->type;
+    data->textureSelect = ctx.getDXRenderer()->m_pScene->textureSelect;
 
     // Scene geometry
     for (auto& node : mRootNodes)

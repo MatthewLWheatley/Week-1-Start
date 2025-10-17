@@ -554,19 +554,26 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 	ImGui::Text("Press M to change texture");
 	ImGui::Text("Texture Index: %d", m_pScene->textureIndex);
 	
-	XMFLOAT3 camPos = m_pScene->getCamera()->getPosition();
-	if(ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f)){
-        m_pScene->getCamera()->setPosition(camPos);
-	}
-    XMFLOAT3 camRot = m_pScene->getCamera()->getLookDir();
-    if (ImGui::DragFloat2("Camera Look", &camRot.x, 0.1f)) {
-        m_pScene->getCamera()->setLookDir(camRot);
+    if (m_pScene->getCamera()) {
+        XMFLOAT3 camPos = m_pScene->getCamera()->getPosition();
+        if (ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f)) {
+            m_pScene->getCamera()->setPosition(camPos);
+        }
+
+        XMFLOAT3 camRot = m_pScene->getCamera()->getLookDir();
+        if (ImGui::DragFloat2("Camera Look", &camRot.x, 0.1f)) {
+            m_pScene->getCamera()->setLookDir(camRot);
+        }
     }
     XMFLOAT3 clr = m_pScene->albedo;
     if (ImGui::ColorEdit3("Color", &clr.x)) 
     {
 		m_pScene->albedo = clr;
     }
+    ImGui::SliderFloat("metal", &m_pScene->metal, 0, 1, "%.003f");
+    ImGui::SliderFloat("rough", &m_pScene->rough, 0, 1, "%.003f");
+    ImGui::SliderFloat("texture", &m_pScene->textureSelect, 0, 1, "%1.0f");
+    ImGui::SliderFloat("type", &m_pScene->type, 0, 2, "%1.0f");
 
 
     ImGui::Begin("Window A");
@@ -590,6 +597,21 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
     ImGui::End();
 
     ImGui::Begin("Window B");
+    if (ImGui::Button("add light")) 
+    {
+        if (m_pScene->lightCount + 1 < MAX_LIGHTS) {
+            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = true;
+            m_pScene->lightCount++;
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("minus light"))
+    {
+        if (m_pScene->lightCount > 0) {
+            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = false;
+            m_pScene->lightCount--;
+        }
+    }
     for (int x = 0; x < MAX_LIGHTS; x++)
     {
         if (!m_pScene->m_lightProperties.Lights[x].Enabled) continue;

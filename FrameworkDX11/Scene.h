@@ -45,6 +45,12 @@ public:
 
 	int textureIndex = 0;
 	XMFLOAT3 albedo = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	float metal = 0.0f;
+	float rough = 0.0f;
+	float type = 2.0f;
+	float textureSelect = 1.0f;
+	int lightCount = 2;
+
 
 	friend class Dx11Renderer;
 

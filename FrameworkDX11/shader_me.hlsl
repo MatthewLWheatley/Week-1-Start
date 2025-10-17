@@ -8,6 +8,10 @@ cbuffer ConstantBuffer : register(b0)
     matrix Projection; // Camera projection matrix (view to clip space)
     float4 vOutputColor; // Color to be used as output color (e.g., for solid color rendering)
     float4 frank;
+    float metal = 0;
+    float rough = 0;
+    float type = 2;
+    float textureSelect = 1;
 }
 
 cbuffer ConstantBuffer : register(b2)
@@ -142,16 +146,21 @@ float2 IntergrateBRDF(float NdotV, float roughness)
 
 float4 PS_PBR(PS_INPUT IN) : SV_TARGET
 {
-    float3 finalColour = float4(0, 0, 0, 0);
-    float3 albedo = albedoMap.Sample(samLinear, IN.Tex);
-    float metallic = MetallicMap.Sample(samLinear, IN.Tex).r;
-    float roughness = RoughnessMap.Sample(samLinear, IN.Tex).r;
-    //float3 albedo = frank.xyz;
-    //float metallic = 0.0;
-    //float roughness = 0.01;
+    float3 finalColour = float3(0, 0, 0);
+    
+    float3 albedo = frank.xyz;
+    float metallic = metal;
+    float roughness = rough;
+    
+    if (textureSelect == 1)
+    {
+        albedo = albedoMap.Sample(samLinear, IN.Tex).xyz;
+        metallic = MetallicMap.Sample(samLinear, IN.Tex).r;
+        roughness = RoughnessMap.Sample(samLinear, IN.Tex).r;
+    }
     
     float3 N = normalize(IN.Norm);
-    float3 V = normalize(EyePosition - IN.worldPos);
+    float3 V = normalize(EyePosition - IN.worldPos).xyz;
     float cosTheta = max(dot(N, V), 0.0);
     float3 F0 = float3(0.04, 0.04, 0.04);
     F0 = lerp(F0, albedo, metallic);
@@ -163,7 +172,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
     {
         if (!Lights[i].Enabled)
             continue;
-        float3 L = normalize(Lights[i].Position - IN.worldPos);
+        float3 L = normalize(Lights[i].Position - IN.worldPos).xyz;
         float3 H = normalize(V + L);
     
         float NdotL = max(dot(N, L), 0.0);
@@ -177,7 +186,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
     
         float3 Lo = (Diffuse + BRDF) * NdotL;
         
-        float3 L2 = Lights[i].Position - IN.worldPos;
+        float3 L2 = Lights[i].Position.xyz - IN.worldPos.xyz;
         float distance = length(L2);
         float attenuation = 1.0 / (Lights[i].ConstantAttenuation + Lights[i].LinearAttenuation * distance + Lights[i].QuadraticAttenuation * (distance * distance));
         Lo = Lo * (Lights[i].Color.xyz * attenuation);
@@ -187,7 +196,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
     
     
     float3 finalIBL = float3(0, 0, 0);
-    int typeIBL = 2;
+    int typeIBL = type;
 
     if (typeIBL == 0)
     {
