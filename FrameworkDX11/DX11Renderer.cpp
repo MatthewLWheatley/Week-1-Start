@@ -583,14 +583,64 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
         std::string objName = "Object " + std::to_string(x);
         if (ImGui::CollapsingHeader(objName.c_str())) 
         {
-            XMMATRIX objPos = m_pScene->m_objects[x]->GetMatrixOfRoot();
-			XMFLOAT3 objPosF;
-			XMStoreFloat3(&objPosF, objPos.r[3]);
+            XMMATRIX temp = m_pScene->m_objects[x]->GetMatrixOfRoot();
 
+            XMVECTOR scaleV, rotQ, transV;
+			XMMatrixDecompose(&scaleV, &rotQ, &transV, temp);
+			XMFLOAT3 objPos, scale;
+			XMStoreFloat3(&objPos, transV);
+			XMStoreFloat3(&scale, scaleV);
 
-            if (ImGui::DragFloat3(("Position##" + std::to_string(x)).c_str(), &objPosF.x, 0.1f)) {
-				m_pScene->m_objects[x]->AddMatrixToRoots(XMMatrixTranslation(objPosF.x, objPosF.y, objPosF.z));
-                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(XMMatrixTranslation(objPosF.x, objPosF.y, objPosF.z));
+            XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+            XMFLOAT3 rotRad;
+            rotRad.y = asinf(rotM.r[0].m128_f32[2]);
+            if (cosf(rotRad.y) > 0) {
+                rotRad.x = atan2f(-rotM.r[1].m128_f32[2], rotM.r[2].m128_f32[2]);
+                rotRad.z = atan2f(-rotM.r[0].m128_f32[1], rotM.r[0].m128_f32[0]);
+            }
+            else {
+                rotRad.x = atan2f(rotM.r[1].m128_f32[0], rotM.r[1].m128_f32[1]);
+                rotRad.z = 0.0f;
+            }
+
+            XMFLOAT3 rotDeg = {XMConvertToDegrees( rotRad.x), 
+                XMConvertToDegrees(rotRad.y), 
+                XMConvertToDegrees(rotRad.z)};
+
+            if (ImGui::DragFloat3(("Scale##" + std::to_string(x)).c_str(), &scale.x, 0.1f)) {
+                if (scale.x == 0) scale.x = 0.01f;
+                if (scale.y == 0) scale.y = 0.01f;
+                if (scale.z == 0) scale.z = 0.01f;
+                XMVECTOR scaleV = XMLoadFloat3(&scale);
+                XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotDeg.x), XMConvertToRadians(rotDeg.y), XMConvertToRadians(rotDeg.z));
+                XMMATRIX out = XMMatrixIdentity();
+                XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
+                XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
+                XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+                out = scaleM * rotM * posM;
+                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
+            }
+
+            if (ImGui::DragFloat3(("Rotation##" + std::to_string(x)).c_str(), &rotDeg.x, 0.1f)) {
+                XMVECTOR scaleV = XMLoadFloat3(&scale);
+                XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotDeg.x), XMConvertToRadians(rotDeg.y), XMConvertToRadians(rotDeg.z));
+                XMMATRIX out = XMMatrixIdentity();
+                XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
+                XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
+                XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+                out = scaleM * rotM * posM;
+                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
+            }
+
+            if (ImGui::DragFloat3(("Position##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
+                XMVECTOR scaleV = XMLoadFloat3(&scale);
+				XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotDeg.x), XMConvertToRadians(rotDeg.y), XMConvertToRadians(rotDeg.z));
+                XMMATRIX out = XMMatrixIdentity();
+                XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
+                XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
+                XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+                out = scaleM * rotM * posM;
+                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
             }
 		}
     }

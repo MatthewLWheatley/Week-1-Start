@@ -225,6 +225,13 @@ public:
 	XMMATRIX GetMatrixOfRoot() const;
     std::vector<SceneNode>      mRootNodes;
 
+    SceneNode* GetRootNode(size_t idx) {
+        if (idx < mRootNodes.size()) {
+            return &mRootNodes[idx];
+        }
+        return nullptr;
+	}
+
 private:
 
     

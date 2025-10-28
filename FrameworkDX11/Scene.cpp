@@ -2,6 +2,7 @@
 #include "DDSTextureLoader.h"
 #include <iostream>
 #include "DX11Renderer.h"
+#include <algorithm>
 
 // Initialization function for the scene
 HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, DX11Renderer* renderer)
@@ -23,12 +24,22 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     
     bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
-    bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
+    bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\simplerig.gltf");
+	//bool ok3 = m_sceneobject3.LoadGLTF(m_ctx, L"Resources\\box.gltf");
 	m_objects[0] = &m_sceneobject;
-	m_objects[1] = &m_sceneobject2;
-    m_sceneobject2.AddScaleToRoots(10.0f);
-    if (!ok || !ok2)
+    m_objects[1] = &m_sceneobject2;
+    //m_objects[2] = &m_sceneobject3;
+    m_sceneobject2.AddScaleToRoots(0.5f);
+    if (!ok)
 		return E_FAIL;  // If loading fails, return an error
+
+    DirectX::XMStoreFloat4(&m_startRot, DirectX::XMQuaternionIdentity()); // No rotation
+    DirectX::XMStoreFloat4(&m_endRot, DirectX::XMQuaternionRotationAxis(
+        DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), // Y-axis
+        DirectX::XM_PI // 180 degrees
+    ));
+
+
 
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
@@ -177,8 +188,50 @@ void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
 // Update function to update the scene's state
 void Scene::update(const float deltaTime)
 {
+    //------------- update part----------------
+
+
     //m_sceneobject2.SetMatrixToRoots(XMMatrixScaling(.1f, .1f, .1f));
     /*m_sceneobject2.SetMatrixToRoots(XMMatrixTranslation( m_lightProperties.Lights[0].Position.x*10, m_lightProperties.Lights[0].Position.y * 10, m_lightProperties.Lights[0].Position.z * 10) * XMMatrixScaling(.1f, .1f, .1f));*/
+
+
+    m_t += deltaTime/2 * m_direction;
+    if (m_t > 1.0f || m_t < 0.0f)
+    {
+        m_direction *= -1.0f; // Reverse direction
+        m_t = std::clamp(m_t, 0.0f, 1.0f); // Clamp the value to prevent overshooting
+    }
+
+    DirectX::XMVECTOR currentPos = DirectX::XMVectorLerp(
+        DirectX::XMLoadFloat3(&m_startPos),
+        DirectX::XMLoadFloat3(&m_endPos),
+        m_t
+    );
+
+    DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixTranslationFromVector(currentPos);
+
+    m_sceneobject.SetMatrixToRoots(translationMatrix * XMMatrixScaling(0.5f, 0.5f, 0.5f));
+
+    DirectX::XMVECTOR currentRot = DirectX::XMQuaternionSlerp(
+        DirectX::XMLoadFloat4(&m_startRot),
+        DirectX::XMLoadFloat4(&m_endRot),
+        m_t
+    );
+
+    // Convert the result back to a matrix for the shader
+    DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixRotationQuaternion(currentRot);
+
+    // Combine with our previous translation and apply it
+    DirectX::XMMATRIX finalMatrix = rotationMatrix * translationMatrix;
+    m_sceneobject.GetRootNode(0)->SetMatrix(finalMatrix);
+
+
+
+
+
+
+	//---------------rendering part---------------
+
 
 
     // Bind texture resources to pixel shader stages
@@ -204,12 +257,6 @@ void Scene::update(const float deltaTime)
     cb.textureSelect = textureSelect;
 
 
-
-
-
-
-
-
     m_pImmediateContext->UpdateSubresource(m_pConstantBufferSwitch.Get(), 0, nullptr, &cb, 0, 0);
 
     m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
@@ -222,6 +269,9 @@ void Scene::update(const float deltaTime)
     m_sceneobject.AnimateFrame(m_ctx);
     m_sceneobject.RenderFrame(m_ctx, deltaTime);
 
+	m_sceneobject2.AnimateFrame(m_ctx);
+	m_sceneobject2.RenderFrame(m_ctx, deltaTime);
+
 	ConstantBufferlight cb2;
     cb2.vOutputColor2 = XMFLOAT4(0, 0, 1, 1);
     m_pImmediateContext->UpdateSubresource(m_pConstantBufferlight.Get(), 0, nullptr, &cb2, 0, 0);
@@ -229,6 +279,4 @@ void Scene::update(const float deltaTime)
     m_pImmediateContext->PSSetShader(m_pRenderer->m_pPixelSolidShader.Get(),nullptr,0);
     ID3D11Buffer* cbSwitch = m_pConstantBufferlight.Get();
     m_pImmediateContext->PSSetConstantBuffers(2, 1, &cbSwitch);
-    m_sceneobject2.AnimateFrame(m_ctx);
-    m_sceneobject2.RenderFrame(m_ctx, deltaTime);
 }
