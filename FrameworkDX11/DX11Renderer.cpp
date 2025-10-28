@@ -587,21 +587,29 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 
             XMVECTOR scaleV, rotQ, transV;
 			XMMatrixDecompose(&scaleV, &rotQ, &transV, temp);
+
 			XMFLOAT3 objPos, scale;
 			XMStoreFloat3(&objPos, transV);
 			XMStoreFloat3(&scale, scaleV);
 
             XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+			XMFLOAT4 quat; 
+            XMStoreFloat4(&quat, rotQ);
             XMFLOAT3 rotRad;
-            rotRad.y = asinf(rotM.r[0].m128_f32[2]);
-            if (cosf(rotRad.y) > 0) {
-                rotRad.x = atan2f(-rotM.r[1].m128_f32[2], rotM.r[2].m128_f32[2]);
-                rotRad.z = atan2f(-rotM.r[0].m128_f32[1], rotM.r[0].m128_f32[0]);
-            }
-            else {
-                rotRad.x = atan2f(rotM.r[1].m128_f32[0], rotM.r[1].m128_f32[1]);
-                rotRad.z = 0.0f;
-            }
+            float sinr_cosp = 2.0f * (quat.w * quat.x + quat.y * quat.z);
+            float cosr_cosp = 1.0f - 2.0f * (quat.x * quat.x + quat.y * quat.y);
+            rotRad.x = atan2f(sinr_cosp, cosr_cosp);
+
+            float sinp = 2.0f * (quat.w * quat.y - quat.z * quat.x);
+            if (fabsf(sinp) >= 1.0f)
+                rotRad.y = copysignf(XM_PI / 2.0f, sinp);
+            else
+                rotRad.y = asinf(sinp);
+
+            float siny_cosp = 2.0f * (quat.w * quat.z + quat.x * quat.y);
+            float cosy_cosp = 1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z);
+            rotRad.z = atan2f(siny_cosp, cosy_cosp);
+
 
             XMFLOAT3 rotDeg = {XMConvertToDegrees( rotRad.x), 
                 XMConvertToDegrees(rotRad.y), 
