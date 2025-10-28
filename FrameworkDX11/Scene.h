@@ -75,8 +75,17 @@ public:
 	IRenderingContext m_ctx;
 	SceneGraph m_sceneobject;
 	SceneGraph m_sceneobject2;
+	SceneGraph m_sceneobject3;
 
 	vector<SceneGraph*> m_objects = vector<SceneGraph*>(100);
+
+	DirectX::XMFLOAT3 m_startPos = { -3.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT3 m_endPos = { 3.0f, 0.0f, 0.0f };
+	float m_t = 2.0f;
+	float m_direction = 1.0f; // To control the ping-pong
+
+	DirectX::XMFLOAT4 m_startRot;
+	DirectX::XMFLOAT4 m_endRot;
 
 private:
 	ID3D11ShaderResourceView* m_pTextureDiffuse;
