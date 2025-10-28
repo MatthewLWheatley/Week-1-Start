@@ -167,9 +167,11 @@ public:
     void Animate(IRenderingContext &ctx);
 
     XMMATRIX GetWorldMtrx() const { return mWorldMtrx; }
+	void SetWorldMtrx(const XMMATRIX& mtrx) { mWorldMtrx = mtrx; }
     Skeleton* GetSkeleton() {
         return &m_skeleton;
     }
+
 
 private:
     friend class SceneGraph;
@@ -220,6 +222,8 @@ public:
 
     void AnimateFrame(IRenderingContext& ctx);
 
+	XMMATRIX GetMatrixOfRoot() const;
+    std::vector<SceneNode>      mRootNodes;
 
 private:
 
@@ -263,7 +267,6 @@ private:
     SceneId               mSceneId;
 
     // Geometry
-    std::vector<SceneNode>      mRootNodes;
 
     // Shaders
     ID3D11VertexShader*         mVertexShader = nullptr;

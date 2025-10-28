@@ -55,7 +55,7 @@ HRESULT DX11App::initWindow(HINSTANCE hInstance, int nCmdShow)
 
     // Create window
     m_hInst = hInstance;
-    RECT rc = { 0, 0, 1920, 1080 };
+    RECT rc = { 0, 0, 1280, 720 };
 
     m_viewWidth = SCREEN_WIDTH;
     m_viewHeight = SCREEN_HEIGHT;
@@ -107,7 +107,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     PAINTSTRUCT ps;
     HDC hdc;
 
-    gThisApp->getRenderer()->input(hWnd, message, wParam, lParam);
+    if(gThisApp && gThisApp->getRenderer())gThisApp->getRenderer()->input(hWnd, message, wParam, lParam);
 
     switch (message)
     {

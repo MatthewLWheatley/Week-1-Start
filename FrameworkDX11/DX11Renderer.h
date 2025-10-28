@@ -21,7 +21,8 @@
 #include "wrl.h"
 #include "structures.h"
 #include <vector>
-
+#include <d3d11_1.h>
+#include "imgui/imgui_impl_dx11.h"
 class Scene;
 
 
@@ -71,10 +72,12 @@ public: // properties
 
 	Microsoft::WRL::ComPtr <ID3D11VertexShader>		m_pVertexShader;
 	Microsoft::WRL::ComPtr <ID3D11PixelShader>		m_pPixelShader;
+	Microsoft::WRL::ComPtr <ID3D11PixelShader>		m_pPixelSolidShader;
 	Microsoft::WRL::ComPtr <ID3D11InputLayout>		m_pVertexLayout;
 
 	XMFLOAT4X4				m_matProjection;
-	ConstantBuffer			m_ConstantBufferData;
+	//ConstantBuffer			m_ConstantBufferData;
+	ConstantBufferSwitch	m_ConstantBufferDataSwitch;
 
 
 	Scene* m_pScene;

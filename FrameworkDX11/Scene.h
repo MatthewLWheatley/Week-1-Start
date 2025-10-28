@@ -37,22 +37,36 @@ public:
 	void		cleanUp();
 	Camera*		getCamera() { return m_pCamera; }
 
+	void setLightPos(int lightIndex, XMFLOAT4 pos);
+
 	void		update(const float deltaTime);
 	
 	const LightPropertiesConstantBuffer& getLightProperties() { return m_lightProperties; }
 
-	float time = 0.0f;
+	int textureIndex = 0;
+	XMFLOAT3 albedo = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	float metal = 0.0f;
+	float rough = 0.0f;
+	float type = 2.0f;
+	float textureSelect = 1.0f;
+	int lightCount = 2;
+
+
+	friend class Dx11Renderer;
+
+	DX11Renderer* m_pRenderer = nullptr;
 
 private:
 	void setupLightProperties();
+
 
 public:
 	Camera* m_pCamera;
 	
 	Microsoft::WRL::ComPtr <ID3D11Device>			m_pd3dDevice;
 	Microsoft::WRL::ComPtr <ID3D11DeviceContext>	m_pImmediateContext;
-	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBuffer;
-	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBuffer2;
+	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBufferlight;
+	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBufferSwitch;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pLightConstantBuffer;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pCustomConstantBuffer;
 
@@ -60,7 +74,9 @@ public:
 	LightPropertiesConstantBuffer m_lightProperties;
 	IRenderingContext m_ctx;
 	SceneGraph m_sceneobject;
+	SceneGraph m_sceneobject2;
 
+	vector<SceneGraph*> m_objects = vector<SceneGraph*>(100);
 
 private:
 	ID3D11ShaderResourceView* m_pTextureDiffuse;

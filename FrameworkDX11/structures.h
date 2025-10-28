@@ -10,23 +10,32 @@ using namespace DirectX;
 //--------------------------------------------------------------------------------------
 
 
-struct ConstantBuffer
+//struct ConstantBuffer
+//{
+//	XMMATRIX mWorld;
+//	XMMATRIX mView;
+//	XMMATRIX mProjection;
+//	XMFLOAT4 vOutputColor;
+//	XMMATRIX boneTransforms[max_bones];
+//	unsigned int bone_count;
+//};
+
+struct ConstantBufferSwitch
 {
 	XMMATRIX mWorld;
 	XMMATRIX mView;
 	XMMATRIX mProjection;
 	XMFLOAT4 vOutputColor;
-	XMMATRIX boneTransforms[max_bones];
-	unsigned int bone_count;
+	XMFLOAT4 frank;
+	float metal;
+	float rough;
+	float type;
+	float textureSelect;
 };
 
-struct ConstantBuffer2 
+struct ConstantBufferlight
 {
-	XMMATRIX mWorld;
-	XMMATRIX mView;
-	XMMATRIX mProjection;
-	XMFLOAT4 vOutputColor;
-	float textureSelect;
+	XMFLOAT4 vOutputColor2;
 };
 
 enum LightType
@@ -36,7 +45,7 @@ enum LightType
 	SpotLight = 2
 };
 
-#define MAX_LIGHTS 1
+#define MAX_LIGHTS 10
 
 struct Light
 {

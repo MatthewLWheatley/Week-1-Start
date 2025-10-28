@@ -5,44 +5,37 @@
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"
 #include "d3dcompiler.h"
+#include <iostream>
 
-// Apparently we're doing a mode switcher because committing to one rendering system is too mainstream
 // TRUE - PBR Rendering / FALSE - Animation Rendering
-constexpr bool PBR_MODE = true;
+constexpr bool PBR_MODE = TRUE;
 
 #pragma region Class lifetime
 
-// Main initialization - where everything goes right until it doesn't
 HRESULT DX11Renderer::init(HWND hwnd)
 {
-    // Initialize the D3D11 device and swap chain - aka "please don't crash immediately"
     initDevice(hwnd);
 
-    // Create and initialize the scene because rendering nothing would be boring
     m_pScene = new Scene;
     m_pScene->init(hwnd, m_pd3dDevice, m_pImmediateContext, this);
 
-    // Set up projection matrix - making 3D things look 3D on your 2D screen (magic)
     RECT rc;
     GetClientRect(hwnd, &rc);
     UINT width = rc.right - rc.left;
     UINT height = rc.bottom - rc.top;
-    constexpr float fovAngleY = XMConvertToRadians(60.0f); // 60 degrees because that's what everyone uses
+    constexpr float fovAngleY = XMConvertToRadians(60.0f);
     XMStoreFloat4x4(&m_matProjection, XMMatrixPerspectiveFovLH(fovAngleY, width / (FLOAT)height, 0.01f, 100.0f));
 
-    // Initialize ImGUI so you can have a debug menu that you'll probably never style properly
     initIMGUI(hwnd);
-
     HRESULT hr;
-
-    // Compile vertex shader - choose your fighter edition
+    // Compile the vertex shader
     ID3DBlob* pVSBlob = nullptr;
-    if constexpr (PBR_MODE)
+    if constexpr (PBR_MODE) 
         hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "VS", "vs_4_0", &pVSBlob);
     else
         hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "VS", "vs_4_0", &pVSBlob);
+    
 
-    // If shader compilation fails, show a message box that the user will ignore anyway
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -50,7 +43,7 @@ HRESULT DX11Renderer::init(HWND hwnd)
         return hr;
     }
 
-    // Create the actual vertex shader from the compiled blob
+    // Create the vertex shader
     hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &m_pVertexShader);
     if (FAILED(hr))
     {
@@ -58,38 +51,38 @@ HRESULT DX11Renderer::init(HWND hwnd)
         return hr;
     }
 
-    // Define input layout - tell the GPU what your vertex data looks like or it'll just guess (badly)
+    // Define the input layout
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },    // Where the vertex is
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },      // Which way it's facing
-        { "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },  // For normal mapping (fancy bumps)
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },        // UV coordinates for textures
-        { "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT,  0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }, // Which bones affect this vertex
-        { "BLENDWEIGHT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }  // How much each bone affects it
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT,  0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BLENDWEIGHT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
 
     UINT numElements = ARRAYSIZE(layout);
 
-    // Create input layout from the description - more GPU handholding
+    // Create the input layout
     hr = m_pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
         pVSBlob->GetBufferSize(), &m_pVertexLayout);
-    pVSBlob->Release(); // Clean up the blob because memory leaks are for amateurs
+    pVSBlob->Release();
     if (FAILED(hr))
         return hr;
 
-    // Bind the input layout to the pipeline
+    // Set the input layout
     m_pImmediateContext->IASetInputLayout(m_pVertexLayout.Get());
 
-    // Compile pixel shader - round two of "please compile"
+    // Compile the pixel shader
     ID3DBlob* pPSBlob = nullptr;
 
     if constexpr (PBR_MODE)
-        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PS_Normal", "ps_4_0", &pPSBlob);
+        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PS_PBR", "ps_4_0", &pPSBlob);
     else
         hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "PS", "ps_4_0", &pPSBlob);
 
-    // Same error message copy-pasted because DRY is for other people
+
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -97,42 +90,55 @@ HRESULT DX11Renderer::init(HWND hwnd)
         return hr;
     }
 
-    // Create pixel shader - this one decides what color your pixels are
+    // Create the pixel shader
     hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelShader);
-    pPSBlob->Release(); // More cleanup
+    pPSBlob->Release();
+    if (FAILED(hr))
+        return hr;
+
+    // Compile the pixel shader
+    pPSBlob = nullptr;
+
+    hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
+    
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+        return hr;
+    }
+
+    // Create the pixel shader
+    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelSolidShader);
+    pPSBlob->Release();
     if (FAILED(hr))
         return hr;
 
     return hr;
 }
 
-// Initialize DirectX device - the most painful part of graphics programming
 HRESULT DX11Renderer::initDevice(HWND hwnd)
 {
     HRESULT hr = S_OK;
 
-    // Get window dimensions because we need to know how big our canvas is
     RECT rc;
     GetClientRect(hwnd, &rc);
     UINT width = rc.right - rc.left;
     UINT height = rc.bottom - rc.top;
 
-    // Enable debug layer in debug builds so you can see all your mistakes in real-time
     UINT createDeviceFlags = 0;
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    // Try hardware first, then progressively worse fallbacks if your GPU is having a bad day
     D3D_DRIVER_TYPE driverTypes[] =
     {
-        D3D_DRIVER_TYPE_HARDWARE,   // Your actual GPU
-        D3D_DRIVER_TYPE_WARP,       // Software rasterizer (slow but works)
-        D3D_DRIVER_TYPE_REFERENCE,  // Extremely slow but accurate reference implementation
+        D3D_DRIVER_TYPE_HARDWARE,
+        D3D_DRIVER_TYPE_WARP,
+        D3D_DRIVER_TYPE_REFERENCE,
     };
     UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
-    // Feature levels - try the newest first, fall back to older ones if needed
     D3D_FEATURE_LEVEL featureLevels[] =
     {
         D3D_FEATURE_LEVEL_11_1,
@@ -142,27 +148,26 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
     };
     UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-    // Loop through driver types until one works (fingers crossed)
     for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
     {
         m_driverType = driverTypes[driverTypeIndex];
         hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
             D3D11_SDK_VERSION, &m_pd3dDevice, &m_featureLevel, &m_pImmediateContext);
 
-        // DirectX 11.0 doesn't know about 11.1, so retry without it
         if (hr == E_INVALIDARG)
         {
+            // DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
             hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
                 D3D11_SDK_VERSION, &m_pd3dDevice, &m_featureLevel, &m_pImmediateContext);
         }
 
         if (SUCCEEDED(hr))
-            break; // Found a working driver, we're good
+            break;
     }
     if (FAILED(hr))
-        return hr; // None of them worked, RIP
+        return hr;
 
-    // Get DXGI factory from device - needed for creating swap chain
+    // Obtain DXGI factory from device (since we used nullptr for pAdapter above)
     IDXGIFactory1* dxgiFactory = nullptr;
     {
         IDXGIDevice* dxgiDevice = nullptr;
@@ -186,27 +191,26 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
         return hr;
     }
 
-    // Create swap chain - double/triple buffering so you don't see half-drawn frames
+    // Create swap chain
     IDXGIFactory2* dxgiFactory2 = nullptr;
     hr = dxgiFactory->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory2));
     if (dxgiFactory2)
     {
-        // DirectX 11.1 or later path - the "modern" way
+        // DirectX 11.1 or later
         hr = m_pd3dDevice->QueryInterface(__uuidof(ID3D11Device1), &m_pd3dDevice1);
         if (SUCCEEDED(hr))
         {
             (void)m_pImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), &m_pImmediateContext1);
         }
 
-        // Swap chain description - using HDR format for that sweet sweet color range
         DXGI_SWAP_CHAIN_DESC1 sd = {};
         sd.Width = width;
         sd.Height = height;
-        sd.Format = DXGI_FORMAT_R16G16B16A16_FLOAT; // 16-bit float per channel, fancy
-        sd.SampleDesc.Count = 1;   // No MSAA because who needs anti-aliasing anyway
+        sd.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        sd.BufferCount = 1; // Single buffered because we're living dangerously
+        sd.BufferCount = 1;
 
         hr = dxgiFactory2->CreateSwapChainForHwnd(m_pd3dDevice.Get(), hwnd, &sd, nullptr, nullptr, &m_pSwapChain1);
         if (SUCCEEDED(hr))
@@ -218,24 +222,24 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
     }
     else
     {
-        // DirectX 11.0 systems - the "I'm on ancient hardware" path
+        // DirectX 11.0 systems
         DXGI_SWAP_CHAIN_DESC sd = {};
         sd.BufferCount = 1;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
-        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Regular 8-bit per channel
-        sd.BufferDesc.RefreshRate.Numerator = 60;   // 60 Hz
+        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.BufferDesc.RefreshRate.Numerator = 60;
         sd.BufferDesc.RefreshRate.Denominator = 1;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         sd.OutputWindow = hwnd;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
-        sd.Windowed = TRUE; // Fullscreen is overrated
+        sd.Windowed = TRUE;
 
         hr = dxgiFactory->CreateSwapChain(m_pd3dDevice.Get(), &sd, &m_pSwapChain);
     }
 
-    // Disable ALT+ENTER for fullscreen toggle because we don't handle it
+    // Note this tutorial doesn't handle full-screen swapchains so we block the ALT+ENTER shortcut
     dxgiFactory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 
     dxgiFactory->Release();
@@ -247,7 +251,7 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
         return hr;
     }
 
-    // Create render target view - where we actually draw stuff
+    // Create a render target view
     ID3D11Texture2D* pBackBuffer = nullptr;
     hr = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBuffer));
     if (FAILED(hr))
@@ -266,13 +270,13 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
         return hr;
     }
 
-    // Create depth stencil texture - for knowing what's in front of what
+    // Create depth stencil texture
     D3D11_TEXTURE2D_DESC descDepth = {};
     descDepth.Width = width;
     descDepth.Height = height;
     descDepth.MipLevels = 1;
     descDepth.ArraySize = 1;
-    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // 24-bit depth, 8-bit stencil
+    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     descDepth.SampleDesc.Count = 1;
     descDepth.SampleDesc.Quality = 0;
     descDepth.Usage = D3D11_USAGE_DEFAULT;
@@ -287,7 +291,7 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
         return hr;
     }
 
-    // Create depth stencil view - so we can actually use the depth buffer
+    // Create the depth stencil view
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
     descDSV.Format = descDepth.Format;
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
@@ -300,16 +304,16 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
         return hr;
     }
 
-    // Bind render target and depth buffer to output merger stage
+    // Get the raw pointer.
     ID3D11RenderTargetView* rtv = m_pRenderTargetView.Get();
     m_pImmediateContext->OMSetRenderTargets(1, &rtv, m_pDepthStencilView.Get());
 
-    // Setup viewport - define the area we're drawing to
+    // Setup the viewport
     D3D11_VIEWPORT vp;
     vp.Width = (FLOAT)width;
     vp.Height = (FLOAT)height;
-    vp.MinDepth = 0.0f; // Near plane
-    vp.MaxDepth = 1.0f; // Far plane
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
     vp.TopLeftX = 0;
     vp.TopLeftY = 0;
     m_pImmediateContext->RSSetViewports(1, &vp);
@@ -317,38 +321,32 @@ HRESULT DX11Renderer::initDevice(HWND hwnd)
     return S_OK;
 }
 
-// Cleanup - say goodbye to everything
 void DX11Renderer::cleanUp()
 {
     cleanupDevice();
 
-    // Shutdown ImGUI properly or it'll complain
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 
-    // Clean up scene and free memory like a responsible programmer
+
     m_pScene->cleanUp();
     delete m_pScene;
 }
 
-// Cleanup DirectX device - unbind everything and check for leaks
 void DX11Renderer::cleanupDevice()
 {
-    // Unbind all render targets - important for proper cleanup
+    // Remove any bound render target or depth/stencil buffer
     ID3D11RenderTargetView* nullViews[] = { nullptr };
     m_pImmediateContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
 
-    // Clear pipeline state
     if (m_pImmediateContext) m_pImmediateContext->ClearState();
-
-    // Flush commands to GPU - make sure everything's done
+    // Flush the immediate context to force cleanup
     if (m_pImmediateContext1) m_pImmediateContext1->Flush();
     m_pImmediateContext->Flush();
 
-    // ComPtr handles releasing automatically, so we just reset
+    // no need to release DX assets as they are com pointers
 
-    // Get debug interface to check for memory leaks (debug builds only)
     ID3D11Debug* debugDevice = nullptr;
     m_pd3dDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debugDevice));
 
@@ -356,21 +354,29 @@ void DX11Renderer::cleanupDevice()
 
     if (debugDevice != nullptr)
     {
-        // Print live objects to debug output - see what you forgot to release
+        // handy for finding dx memory leaks
         debugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
     }
 }
 
-// Compile HLSL shader from file - the thing that fails 90% of the time
+//--------------------------------------------------------------------------------------
+// Helper for compiling shaders with D3DCompile
+//
+// With VS 11, we could load up prebuilt .cso files instead...
+//--------------------------------------------------------------------------------------
 HRESULT DX11Renderer::compileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
 {
     HRESULT hr = S_OK;
 
     DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
-    // Debug builds: enable shader debugging and disable optimizations
-    // Makes shaders slower but easier to debug when they inevitably break
+    // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+    // Setting this flag improves the shader debugging experience, but still allows 
+    // the shaders to be optimized and to run exactly the way they will run in 
+    // the release configuration of this program.
     dwShaderFlags |= D3DCOMPILE_DEBUG;
+
+    // Disable optimizations to improve shader debugging
     dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
@@ -381,8 +387,6 @@ HRESULT DX11Renderer::compileShaderFromFile(const WCHAR* szFileName, LPCSTR szEn
     {
         if (pErrorBlob)
         {
-            // Print shader compilation errors to debug output - actually useful
-            MessageBoxA(NULL, reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()),NULL,MB_OK);
             OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
             pErrorBlob->Release();
         }
@@ -393,33 +397,32 @@ HRESULT DX11Renderer::compileShaderFromFile(const WCHAR* szFileName, LPCSTR szEn
     return S_OK;
 }
 
-// Initialize Dear ImGui - for debug UI that's better than printf
 void DX11Renderer::initIMGUI(HWND hwnd)
 {
+    // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Keyboard navigation
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Gamepad navigation (for couch developers)
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
 
-    // Setup platform/renderer backends - link ImGui to DirectX
+    // Setup Platform/Renderer backends
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(m_pd3dDevice.Get(), m_pImmediateContext.Get());
 }
 
-// Handle input - WASD movement and mouse look
 void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    float movement = 0.02f; // Movement speed - adjust if you want to go nyoom
+
+    float movement = 0.02f;
     static bool mouseDown = false;
 
-    // Let ImGui handle its own input first
     extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
     if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
         return;
 
-    // WASD movement - because arrow keys are for boomers
-    if (GetAsyncKeyState('W'))
+    if (GetAsyncKeyState('W')) 
     {
         m_pScene->getCamera()->moveForward(movement);
     }
@@ -435,61 +438,78 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         m_pScene->getCamera()->strafeRight(movement);
     }
+    // Handle M key with proper debouncing
+    static bool mKeyPressed = false;
+    if (GetAsyncKeyState('M'))
+    {
+        if (!mKeyPressed) {  // Only trigger once per press
+            mKeyPressed = true;
+            m_pScene->textureIndex = (m_pScene->textureIndex + 1) % 2;  // Cycle 0->1->0
+        }
+    }
+    else
+    {
+        mKeyPressed = false;  // Key released, ready for next press
+    }
 
     switch (message)
     {
+
     case WM_KEYDOWN:
         switch (wParam)
         {
-        case 27: // ESC key
+        case 27:
             PostQuitMessage(0);
+            break;
+		case 'm':
             break;
         }
         break;
 
     case WM_RBUTTONDOWN:
-        mouseDown = true; // Right mouse button pressed - enter look mode
+        mouseDown = true;
         break;
     case WM_RBUTTONUP:
-        mouseDown = false; // Released - exit look mode
+        mouseDown = false;
         break;
     case WM_MOUSEMOVE:
     {
         if (!mouseDown)
         {
-            break; // Only care about mouse movement when right button is held
+            break;
         }
-
-        // Get window center - we'll reset mouse here each frame
+        // Get the dimensions of the window
         RECT rect;
         GetClientRect(hWnd, &rect);
 
+        // Calculate the center position of the window
         POINT windowCenter;
         windowCenter.x = (rect.right - rect.left) / 2;
         windowCenter.y = (rect.bottom - rect.top) / 2;
 
-        // Convert to screen coordinates
+        // Convert the client area point to screen coordinates
         ClientToScreen(hWnd, &windowCenter);
 
-        // Get current mouse position
+        // Get the current cursor position
         POINTS mousePos = MAKEPOINTS(lParam);
         POINT cursorPos = { mousePos.x, mousePos.y };
         ClientToScreen(hWnd, &cursorPos);
 
-        // Calculate how far mouse moved from center
+        // Calculate the delta from the window center
         POINT delta;
         delta.x = cursorPos.x - windowCenter.x;
         delta.y = cursorPos.y - windowCenter.y;
 
-        // Update camera rotation based on mouse movement
+        // Update the camera with the delta
+        // (You may need to convert POINT to POINTS or use the deltas as is)
         m_pScene->getCamera()->updateLookAt({ static_cast<short>(delta.x), static_cast<short>(delta.y) });
 
-        // Reset mouse to center - FPS-style mouse look
+
+        // Recenter the cursor
         SetCursorPos(windowCenter.x, windowCenter.y);
     }
     break;
     case WM_ACTIVATE:
-        // When window gains focus, center the mouse
         if (LOWORD(wParam) != WA_INACTIVE) {
             CentreMouseInWindow(hWnd);
         }
@@ -497,51 +517,140 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
 }
 
-// Center mouse in window - for initial setup
+// Function to center the mouse in the window
 void DX11Renderer::CentreMouseInWindow(HWND hWnd)
 {
+    // Get the dimensions of the window
     RECT rect;
     GetClientRect(hWnd, &rect);
 
+    // Calculate the center position
     POINT center;
     center.x = (rect.right - rect.left) / 2;
     center.y = (rect.bottom - rect.top) / 2;
 
+    // Convert the client area point to screen coordinates
     ClientToScreen(hWnd, &center);
 
+    // Move the cursor to the center of the screen
     SetCursorPos(center.x, center.y);
 }
 
-// Start ImGui frame - begin drawing UI
+ImGuiWindowFlags window_flags = 0;
+bool* p_open;
+
 void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 {
+    // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // Basic debug info - FPS counter and controls
+    // YOU will want to modify this for your own debug, controls etc - comment it out to hide the window
+    //ImGui::ShowMetricsWindow();
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Text("FPS %d", FPS);
-    ImGui::Text("Use WASD to move, RMB to look");
-    ImGui::Text("%f", m_pScene->time);
-    ImGui::SetWindowFontScale(1.0f);
+	ImGui::Text("Use WASD to move, RMB to look");
+	ImGui::Text("Press M to change texture");
+	ImGui::Text("Texture Index: %d", m_pScene->textureIndex);
+	
+    if (m_pScene->getCamera()) {
+        XMFLOAT3 camPos = m_pScene->getCamera()->getPosition();
+        if (ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f)) {
+            m_pScene->getCamera()->setPosition(camPos);
+        }
+
+        XMFLOAT3 camRot = m_pScene->getCamera()->getLookDir();
+        if (ImGui::DragFloat2("Camera Look", &camRot.x, 0.1f)) {
+            m_pScene->getCamera()->setLookDir(camRot);
+        }
+    }
+    XMFLOAT3 clr = m_pScene->albedo;
+    if (ImGui::ColorEdit3("Color", &clr.x)) 
+    {
+		m_pScene->albedo = clr;
+    }
+    ImGui::SliderFloat("metal", &m_pScene->metal, 0, 1, "%.003f");
+    ImGui::SliderFloat("rough", &m_pScene->rough, 0, 1, "%.003f");
+    ImGui::SliderFloat("texture", &m_pScene->textureSelect, 0, 1, "%1.0f");
+    ImGui::SliderFloat("type", &m_pScene->type, 0, 2, "%1.0f");
+
+
+    ImGui::Begin("Window A");
+    for (int x = 0; x < m_pScene->m_objects.size(); x++) 
+    {
+		if (!m_pScene->m_objects[x]) continue;
+        std::string objName = "Object " + std::to_string(x);
+        if (ImGui::CollapsingHeader(objName.c_str())) 
+        {
+            XMMATRIX objPos = m_pScene->m_objects[x]->GetMatrixOfRoot();
+			XMFLOAT3 objPosF;
+			XMStoreFloat3(&objPosF, objPos.r[3]);
+
+
+            if (ImGui::DragFloat3(("Position##" + std::to_string(x)).c_str(), &objPosF.x, 0.1f)) {
+				m_pScene->m_objects[x]->AddMatrixToRoots(XMMatrixTranslation(objPosF.x, objPosF.y, objPosF.z));
+                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(XMMatrixTranslation(objPosF.x, objPosF.y, objPosF.z));
+            }
+		}
+    }
+    ImGui::End();
+
+    ImGui::Begin("Window B");
+    if (ImGui::Button("add light")) 
+    {
+        if (m_pScene->lightCount + 1 < MAX_LIGHTS) {
+            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = true;
+            m_pScene->lightCount++;
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("minus light"))
+    {
+        if (m_pScene->lightCount > 0) {
+            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = false;
+            m_pScene->lightCount--;
+        }
+    }
+    for (int x = 0; x < MAX_LIGHTS; x++)
+    {
+        if (!m_pScene->m_lightProperties.Lights[x].Enabled) continue;
+        std::string objName = "Light " + std::to_string(x);
+        if (ImGui::CollapsingHeader(objName.c_str()))
+        {
+            XMFLOAT4 objPos = m_pScene->m_lightProperties.Lights[x].Position;
+
+
+            if (ImGui::DragFloat3(("LPosition##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
+                m_pScene->m_lightProperties.Lights[x].Position = objPos;
+            }
+        }
+    }
+    ImGui::End();
+
     ImGui::Spacing();
 
-    // Example commented code for more ImGui widgets - uncomment to use
-    // ImGui::ShowMetricsWindow(); // Shows internal ImGui metrics
+    // example usage
+    /*if (ImGui::RadioButton("Single threaded CPU", g_ttype == use_cpu_singlethread)) g_ttype = use_cpu_singlethread;
+    if (ImGui::RadioButton("Multi threaded CPU", g_ttype == use_cpu_multithread)) g_ttype = use_cpu_multithread;
+    if (ImGui::RadioButton("GPU", g_ttype == use_gpu)) g_ttype = use_gpu;
+
+    ImGui::Spacing();
+
+    ImGui::SliderInt("Number of Cubes", &g_cube_count, 2, max_number_of_boxes);*/
+
+    
 }
 
-// Finish ImGui frame - actually render the UI
 void DX11Renderer::completeIMGUIDraw()
 {
     ImGui::Render();
+
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
 
-// Main update loop - called every frame
 void DX11Renderer::update(const float deltaTime)
 {
-    // FPS counter - updates once per second
     static float timer = 0;
     timer += deltaTime;
     static unsigned int frameCounter = 0;
@@ -554,26 +663,26 @@ void DX11Renderer::update(const float deltaTime)
         frameCounter = 0;
     }
 
-    // Start ImGui rendering
     startIMGUIDraw(FPS);
 
-    // Clear back buffer to blue-ish color - your blank canvas
-    float blueish[4] = { 0.2, 0.2, 1, 1 }; // RGBA
+    // Clear the back buffer
+    float blueish[4] = { 0.2, 0.2, 1, 1 };
     m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView.Get(), blueish);
 
-    // Clear depth buffer to max depth (1.0)
+
+    // Clear the depth buffer to 1.0 (max depth)
     m_pImmediateContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // Bind shaders to pipeline - tell GPU what to use
+
     m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
     m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 
-    // Update and render the scene - where the actual magic happens
+
     m_pScene->update(deltaTime);
 
-    // Finish ImGui rendering
+    
     completeIMGUIDraw();
 
-    // Present the back buffer - swap buffers and show the frame
-    m_pSwapChain->Present(0, 0); // 0, 0 = no vsync, present immediately
+    // Present our back buffer to our front buffer
+    m_pSwapChain->Present(0, 0);
 }
