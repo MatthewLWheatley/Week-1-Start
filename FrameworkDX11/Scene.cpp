@@ -29,7 +29,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
 	m_objects[0] = &m_sceneobject;
     m_objects[1] = &m_sceneobject2;
     //m_objects[2] = &m_sceneobject3;
-    m_sceneobject2.AddScaleToRoots(0.5f);
+    m_sceneobject2.AddScaleToRoots(-0.5f);
     if (!ok)
 		return E_FAIL;  // If loading fails, return an error
 
@@ -210,7 +210,7 @@ void Scene::update(const float deltaTime)
 
     DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixTranslationFromVector(currentPos);
 
-    m_sceneobject.SetMatrixToRoots(translationMatrix * XMMatrixScaling(0.5f, 0.5f, 0.5f));
+    m_sceneobject.SetMatrixToRoots(translationMatrix);
 
     DirectX::XMVECTOR currentRot = DirectX::XMQuaternionSlerp(
         DirectX::XMLoadFloat4(&m_startRot),
@@ -218,15 +218,17 @@ void Scene::update(const float deltaTime)
         m_t
     );
 
-    // Convert the result back to a matrix for the shader
     DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixRotationQuaternion(currentRot);
 
-    // Combine with our previous translation and apply it
-    DirectX::XMMATRIX finalMatrix = rotationMatrix * translationMatrix;
-    m_sceneobject.GetRootNode(0)->SetMatrix(finalMatrix);
+    m_sceneobject.GetRootNode(0)->AddRotationQuaternion(rotationMatrix);
 
+    //// Combine with our previous translation and apply it
+    //DirectX::XMMATRIX finalMatrix = rotationMatrix * translationMatrix;
+    //m_sceneobject.GetRootNode(0)->SetMatrix(finalMatrix);
 
-
+    m_sceneobject.GetRootNode(0)->mEulerRotation = XMFLOAT3(0.0f, XMConvertToDegrees(atan2f(2.0f * (XMVectorGetW(currentRot) * XMVectorGetY(currentRot) + XMVectorGetX(currentRot) * XMVectorGetZ(currentRot)),
+		1.0f - 2.0f * (XMVectorGetY(currentRot) * XMVectorGetY(currentRot) + XMVectorGetZ(currentRot) * XMVectorGetZ(currentRot)))), 0.0f);
+	m_sceneobject.GetRootNode(0)->mTranslation = XMFLOAT3(XMVectorGetX(currentPos), XMVectorGetY(currentPos), XMVectorGetZ(currentPos));
 
 
 

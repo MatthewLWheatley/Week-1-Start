@@ -420,6 +420,50 @@ bool SceneGraph::LoadGLTF(IRenderingContext &ctx,
 
     Log::Debug(L"");
 
+	for (auto& node : mRootNodes)
+    {
+
+        XMMATRIX temp = node.GetLocalMtrx();
+
+        XMVECTOR scaleV, rotQ, transV;
+        XMMatrixDecompose(&scaleV, &rotQ, &transV, temp);
+
+        XMFLOAT3 objPos, scale;
+        XMStoreFloat3(&objPos, transV);
+        XMStoreFloat3(&scale, scaleV);
+
+
+        XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+        XMFLOAT4 quat;
+
+        XMStoreFloat4(&quat, rotQ);
+
+        XMFLOAT3 rotRad;
+
+        float sinr_cosp = 2.0f * (quat.w * quat.x + quat.y * quat.z);
+        float cosr_cosp = 1.0f - 2.0f * (quat.x * quat.x + quat.y * quat.y);
+        rotRad.x = atan2f(sinr_cosp, cosr_cosp);
+
+        float sinp = 2.0f * (quat.w * quat.y - quat.z * quat.x);
+        if (fabsf(sinp) >= 1.0f)
+            rotRad.y = copysignf(XM_PI / 2.0f, sinp);
+        else
+            rotRad.y = asinf(sinp);
+
+        float siny_cosp = 2.0f * (quat.w * quat.z + quat.x * quat.y);
+        float cosy_cosp = 1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z);
+        rotRad.z = atan2f(siny_cosp, cosy_cosp);
+
+
+        XMFLOAT3 rotDeg = { XMConvertToDegrees(rotRad.x),
+            XMConvertToDegrees(rotRad.y),
+            XMConvertToDegrees(rotRad.z) };
+
+        node.mEulerRotation = rotDeg;
+		node.mScale = scale;
+		node.mTranslation = objPos;
+	}
+
     return true;
 }
 
@@ -472,6 +516,7 @@ bool SceneGraph::LoadSceneFromGltf(IRenderingContext &ctx,
         SceneNode sceneNode(true);
         if (!LoadSceneNodeFromGLTF(ctx, sceneNode, model, nodeIdx, logPrefix + L"   "))
             return false;
+
         mRootNodes.push_back(std::move(sceneNode));
     }
 
@@ -579,15 +624,18 @@ void SceneGraph::Destroy()
 
 void SceneGraph::AddScaleToRoots(double scale)
 {
-    for (auto &rootNode : mRootNodes)
+    for (auto& rootNode : mRootNodes) {
         rootNode.AddScale(scale);
+    }
 }
 
 
 void SceneGraph::AddScaleToRoots(const std::vector<double> &vec)
 {
-    for (auto &rootNode : mRootNodes)
+    for (auto& rootNode : mRootNodes) {
+        
         rootNode.AddScale(vec);
+    }
 }
 
 
@@ -1875,8 +1923,11 @@ void SceneNode::AddScale(const std::vector<double> &vec)
         return;
     }
 
-    const auto mtrx = XMMatrixScaling((float)vec[0], (float)vec[1], (float)vec[2]);
-
+    mScale.x += (float)vec[0];
+    mScale.y += (float)vec[1];
+    mScale.z += (float)vec[2];
+    const auto mtrx = XMMatrixScaling(mScale.x, mScale.y, mScale.z);
+    
     mLocalMtrx = mLocalMtrx * mtrx;
 }
 
@@ -1888,8 +1939,73 @@ void SceneNode::AddMatrix(const XMMATRIX& matrix)
 void SceneNode::SetMatrix(const XMMATRIX& matrix)
 {
     mLocalMtrx = matrix;
+    
 }
 
+
+void SceneNode::AddRotationQuaternion(const XMMATRIX matrix)
+{
+    XMVECTOR scaleV, rotQ, transV;
+    XMMatrixDecompose(&scaleV, &rotQ, &transV, mLocalMtrx);
+
+    XMFLOAT3 objPos, scale;
+    XMStoreFloat3(&objPos, transV);
+    XMStoreFloat3(&scale, scaleV);
+
+
+    XMVECTOR scaleDead, rotDead, transDead;
+    XMMatrixDecompose(&scaleDead, &rotDead, &transDead, matrix);
+    XMMATRIX rotM = XMMatrixRotationQuaternion(rotDead);
+    XMFLOAT4 quat;
+
+    XMStoreFloat4(&quat, rotDead);
+
+    XMFLOAT3 rotRad;
+
+    float sinr_cosp = 2.0f * (quat.w * quat.x + quat.y * quat.z);
+    float cosr_cosp = 1.0f - 2.0f * (quat.x * quat.x + quat.y * quat.y);
+    rotRad.x = atan2f(sinr_cosp, cosr_cosp);
+
+    float sinp = 2.0f * (quat.w * quat.y - quat.z * quat.x);
+    if (fabsf(sinp) >= 1.0f)
+        rotRad.y = copysignf(XM_PI / 2.0f, sinp);
+    else
+        rotRad.y = asinf(sinp);
+
+    float siny_cosp = 2.0f * (quat.w * quat.z + quat.x * quat.y);
+    float cosy_cosp = 1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z);
+    rotRad.z = atan2f(siny_cosp, cosy_cosp);
+
+
+    XMFLOAT3 rotDeg = { XMConvertToDegrees(rotRad.x),
+        XMConvertToDegrees(rotRad.y),
+        XMConvertToDegrees(rotRad.z) };
+
+    rotM = rotM * matrix;
+    XMMATRIX out = XMMatrixIdentity();
+    XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
+    XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
+
+
+    mEulerRotation.x += rotDeg.x;
+	mEulerRotation.y += rotDeg.y;
+	mEulerRotation.z += rotDeg.z;
+    mScale = scale;
+    mTranslation = objPos;
+
+    out = scaleM * rotM * posM;
+
+	mLocalMtrx = out;
+}
+
+void SceneNode::AddRotationQuaternion(const XMVECTOR &quat)
+{
+	auto xmQuaternion = quat;
+    xmQuaternion = XMQuaternionNormalize(xmQuaternion);
+    const auto mtrx = XMMatrixRotationQuaternion(xmQuaternion);
+
+    mLocalMtrx = mLocalMtrx * mtrx;
+}
 
 void SceneNode::AddRotationQuaternion(const std::vector<double> &vec)
 {

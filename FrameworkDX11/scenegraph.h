@@ -149,6 +149,8 @@ public:
     void SetIdentity();
     void AddScale(double scale);
     void AddScale(const std::vector<double> &vec);
+    void AddRotationQuaternion(const XMMATRIX matrix);
+    void AddRotationQuaternion(const XMVECTOR& quat);
     void AddRotationQuaternion(const std::vector<double> &vec);
     void AddMatrix(const XMMATRIX& matrix);
     void AddTranslation(const std::vector<double> &vec);
@@ -172,6 +174,11 @@ public:
         return &m_skeleton;
     }
 
+	XMMATRIX	GetLocalMtrx() const { return mLocalMtrx; }
+
+    XMFLOAT3    mEulerRotation; // only used for debug animation
+    XMFLOAT3    mTranslation;   // only used for debug animation
+    XMFLOAT3    mScale;   // only used for debug animation
 
 private:
     friend class SceneGraph;
