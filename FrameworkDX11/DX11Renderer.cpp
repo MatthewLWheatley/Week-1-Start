@@ -593,18 +593,6 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 
             
             XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
-<<<<<<< Updated upstream
-            XMFLOAT3 rotRad;
-            rotRad.y = asinf(rotM.r[0].m128_f32[2]);
-            if (cosf(rotRad.y) > 0) {
-                rotRad.x = atan2f(-rotM.r[1].m128_f32[2], rotM.r[2].m128_f32[2]);
-                rotRad.z = atan2f(-rotM.r[0].m128_f32[1], rotM.r[0].m128_f32[0]);
-            }
-            else {
-                rotRad.x = atan2f(rotM.r[1].m128_f32[0], rotM.r[1].m128_f32[1]);
-                rotRad.z = 0.0f;
-            }
-=======
             XMFLOAT4 quat;
 
             XMStoreFloat4(&quat, rotQ);
@@ -625,7 +613,6 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
             float cosy_cosp = 1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z);
             rotRad.z = atan2f(siny_cosp, cosy_cosp);
 
->>>>>>> Stashed changes
 
             XMFLOAT3 rotDeg = {XMConvertToDegrees( rotRad.x), 
                 XMConvertToDegrees(rotRad.y), 
