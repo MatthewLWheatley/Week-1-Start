@@ -23,23 +23,27 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     
-    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
-    bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\simplerig.gltf");
+    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\box.gltf");
+    bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
 	//bool ok3 = m_sceneobject3.LoadGLTF(m_ctx, L"Resources\\box.gltf");
 	m_objects[0] = &m_sceneobject;
     m_objects[1] = &m_sceneobject2;
     //m_objects[2] = &m_sceneobject3;
-    m_sceneobject2.AddScaleToRoots(-0.5f);
     if (!ok)
 		return E_FAIL;  // If loading fails, return an error
 
-    DirectX::XMStoreFloat4(&m_startRot, DirectX::XMQuaternionIdentity()); // No rotation
-    DirectX::XMStoreFloat4(&m_endRot, DirectX::XMQuaternionRotationAxis(
-        DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), // Y-axis
-        DirectX::XM_PI // 180 degrees
-    ));
+    //DirectX::XMStoreFloat4(&m_startRot, DirectX::XMQuaternionIdentity()); // No rotation
+    //DirectX::XMStoreFloat4(&m_endRot, DirectX::XMQuaternionRotationAxis(
+    //    DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), // Y-axis
+    //    DirectX::XM_PI // 180 degrees
+    //));
 
-
+	AnimationSampler posSampler;
+    posSampler.vec3_values.push_back(DirectX::XMFLOAT3(-3.0f, 0.0f, 0.0f));
+    posSampler.vec3_values.push_back(DirectX::XMFLOAT3(3.0f, 0.0f, 0.0f));
+	posSampler.timestamps.push_back(0.0);
+	posSampler.timestamps.push_back(2.0f);
+	m_myAnimation.m_samplers.push_back(posSampler);
 
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
@@ -190,45 +194,52 @@ void Scene::update(const float deltaTime)
 {
     //------------- update part----------------
 
+    static float animationTimer = 0;
+    animationTimer += deltaTime;
 
-    //m_sceneobject2.SetMatrixToRoots(XMMatrixScaling(.1f, .1f, .1f));
-    /*m_sceneobject2.SetMatrixToRoots(XMMatrixTranslation( m_lightProperties.Lights[0].Position.x*10, m_lightProperties.Lights[0].Position.y * 10, m_lightProperties.Lights[0].Position.z * 10) * XMMatrixScaling(.1f, .1f, .1f));*/
+	AnimationSampler sampler = m_myAnimation.m_samplers[0];
 
-
-    m_t += deltaTime/2 * m_direction;
-    if (m_t > 1.0f || m_t < 0.0f)
+    // Hint - we need a next and a previous keyframe to interpolate between. 
+    int nextKeyframe = -1;
+    for (int i = 0; i < sampler.timestamps.size(); ++i)
     {
-        m_direction *= -1.0f; // Reverse direction
-        m_t = std::clamp(m_t, 0.0f, 1.0f); // Clamp the value to prevent overshooting
+        if (sampler.timestamps[i] > animationTimer)
+        {
+            nextKeyframe = i;
+            break;
+        }
     }
 
-    DirectX::XMVECTOR currentPos = DirectX::XMVectorLerp(
-        DirectX::XMLoadFloat3(&m_startPos),
-        DirectX::XMLoadFloat3(&m_endPos),
-        m_t
-    );
+    // Handle edge cases 
+    // this is a 'fix' but really you'd want more complex logic here for animations with more than two keyframes. Also, what would you do if an animation was looping, or not a looping animation?
+    if (nextKeyframe == -1 || nextKeyframe == 0)
+    {
+        /* nextKeyframe = -1 Time is after the last keyframe */
+        /* nextKeyframe = 0 Time is before the last keyframe */
+        nextKeyframe = 1;
+    }
 
-    DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixTranslationFromVector(currentPos);
+    // this code should be guarded with checks!
+    int prevKeyframe = nextKeyframe - 1;
+    float prevTime = sampler.timestamps[prevKeyframe];
+    float nextTime = sampler.timestamps[nextKeyframe];
 
-    m_sceneobject.SetMatrixToRoots(translationMatrix);
+    // It would be sensible to do a sanity check here and see whether the prevTime and nextTime are sensible, and what you'd expect.
 
-    DirectX::XMVECTOR currentRot = DirectX::XMQuaternionSlerp(
-        DirectX::XMLoadFloat4(&m_startRot),
-        DirectX::XMLoadFloat4(&m_endRot),
-        m_t
-    );
+    // Calculate the progress between these two timestamps
+    float t = (animationTimer - prevTime) / (nextTime - prevTime); // e.g. (1.2 - 0.0) / (2.0 - 0.0) = 0.6
 
-    DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixRotationQuaternion(currentRot);
+    // what does this achieve? What sort of animations would it be useful for?
+    if (animationTimer >= nextTime)
+        animationTimer = 0;
 
-    m_sceneobject.GetRootNode(0)->AddRotationQuaternion(rotationMatrix);
+    DirectX::XMVECTOR prevValue = DirectX::XMLoadFloat3(&sampler.vec3_values[prevKeyframe]);
+    DirectX::XMVECTOR nextValue = DirectX::XMLoadFloat3(&sampler.vec3_values[nextKeyframe]);
 
-    //// Combine with our previous translation and apply it
-    //DirectX::XMMATRIX finalMatrix = rotationMatrix * translationMatrix;
-    //m_sceneobject.GetRootNode(0)->SetMatrix(finalMatrix);
+    DirectX::XMVECTOR finalValue = DirectX::XMVectorLerp(prevValue, nextValue, t);
 
-    m_sceneobject.GetRootNode(0)->mEulerRotation = XMFLOAT3(0.0f, XMConvertToDegrees(atan2f(2.0f * (XMVectorGetW(currentRot) * XMVectorGetY(currentRot) + XMVectorGetX(currentRot) * XMVectorGetZ(currentRot)),
-		1.0f - 2.0f * (XMVectorGetY(currentRot) * XMVectorGetY(currentRot) + XMVectorGetZ(currentRot) * XMVectorGetZ(currentRot)))), 0.0f);
-	m_sceneobject.GetRootNode(0)->mTranslation = XMFLOAT3(XMVectorGetX(currentPos), XMVectorGetY(currentPos), XMVectorGetZ(currentPos));
+    DirectX::XMMATRIX translationMatrix2 = DirectX::XMMatrixTranslationFromVector(finalValue);
+    m_sceneobject2.GetRootNode(0)->SetMatrix(translationMatrix2);
 
 
 

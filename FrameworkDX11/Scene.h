@@ -79,13 +79,16 @@ public:
 
 	vector<SceneGraph*> m_objects = vector<SceneGraph*>(100);
 
-	DirectX::XMFLOAT3 m_startPos = { -3.0f, 0.0f, 0.0f };
-	DirectX::XMFLOAT3 m_endPos = { 3.0f, 0.0f, 0.0f };
-	float m_t = 2.0f;
-	float m_direction = 1.0f; // To control the ping-pong
+	//DirectX::XMFLOAT3 m_startPos = { -3.0f, 0.0f, 0.0f };
+	//DirectX::XMFLOAT3 m_endPos = { 3.0f, 0.0f, 0.0f };
+	//float m_t = 2.0f;
+	//float m_t2 = 0.0f;
+	//float m_direction = 1.0f; // To control the ping-pong
 
-	DirectX::XMFLOAT4 m_startRot;
-	DirectX::XMFLOAT4 m_endRot;
+	//DirectX::XMFLOAT4 m_startRot;
+	//DirectX::XMFLOAT4 m_endRot;
+
+	Animation m_myAnimation;
 
 private:
 	ID3D11ShaderResourceView* m_pTextureDiffuse;
