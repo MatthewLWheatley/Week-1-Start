@@ -23,76 +23,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     
-    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\box.gltf");
-    bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
-	//bool ok3 = m_sceneobject3.LoadGLTF(m_ctx, L"Resources\\box.gltf");
-	m_objects[0] = &m_sceneobject;
-    m_objects[1] = &m_sceneobject2;
-    //m_objects[2] = &m_sceneobject3;
-    if (!ok)
-		return E_FAIL;  // If loading fails, return an error
-
-    //DirectX::XMStoreFloat4(&m_startRot, DirectX::XMQuaternionIdentity()); // No rotation
-    //DirectX::XMStoreFloat4(&m_endRot, DirectX::XMQuaternionRotationAxis(
-    //    DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), // Y-axis
-    //    DirectX::XM_PI // 180 degrees
-    //));
-
-    AnimationSampler sampler0;
-    sampler0.interpolation = AnimationSampler::LINEAR;
-
-    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-
-    sampler0.vec3_values = {
-        XMFLOAT3(-3.0f, 0.0f, 0.0f), 
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(3.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(-3.0f, 0.0f, 0.0f)
-    };
-
-    m_myAnimation.m_samplers.push_back(sampler0);
-
-    AnimationSampler sampler1;
-    sampler1.interpolation = AnimationSampler::LINEAR;
-
-    sampler1.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-
-    sampler1.vec4_values = {
-        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
-        XMFLOAT4(0.0f, 0.7071f, 0.0f, 0.7071f),
-        XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
-        XMFLOAT4(0.0f, 0.7071f, 0.0f, -0.7071f), 
-        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)
-    };
-
-    m_myAnimation.m_samplers.push_back(sampler1);
-
-    AnimationSampler sampler2;
-    sampler2.interpolation = AnimationSampler::LINEAR;
-
-    float orbitRadius = 2.0f;
-    int numKeyframes = 36;
-    float animDuration = 4.0f;
-
-    for (int i = 0; i <= numKeyframes; ++i)
-    {
-        float t = (float)i / (float)numKeyframes;
-        float angle = t * XM_2PI;
-        float timeStamp = t * animDuration;
-
-        sampler2.timestamps.push_back(timeStamp);
-        sampler2.vec3_values.push_back(XMFLOAT3(
-            cos(angle) * orbitRadius,
-            0.0f,
-            sin(angle) * orbitRadius
-        ));
-    }
-
-    m_myAnimation.m_samplers.push_back(sampler2);
-
-    m_myAnimation.m_samplers.push_back(sampler2);
-
+    
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
 
@@ -128,15 +59,13 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
         return hr;  // If buffer creation fails, return the error
 
     // Load texture resources
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
-    if (FAILED(hr))
-        return hr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_metal.dds", nullptr, &m_pTextureMetallic);
-    if (FAILED(hr))
-        return hr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
-    if (FAILED(hr))
-        return hr;/*
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete_Albedo.dds", nullptr, &m_pTextureDiffuse);
+    if (FAILED(hr)) m_pTextureDiffuse = nullptr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete_Metallic.dds", nullptr, &m_pTextureMetallic);
+    if (FAILED(hr)) m_pTextureMetallic = nullptr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete_Roughness.dds", nullptr, &m_pTextureRoughness);
+    if (FAILED(hr))m_pTextureRoughness = nullptr;
+    /*
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_albedo.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr))
         return hr;
@@ -173,6 +102,117 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     hr = m_pd3dDevice->CreateSamplerState(&sampDesc, &m_pSamplerLinear);
 
     return S_OK;  // Return success
+}
+
+void Scene::initAnimation1() 
+{
+    for (auto& object : m_objects) 
+    {
+		object = nullptr;
+    }
+	m_objects = vector<SceneGraph*>(100);
+    bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\box.gltf");
+    bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
+    //bool ok3 = m_sceneobject3.LoadGLTF(m_ctx, L"Resources\\box.gltf");
+    m_objects[0] = &m_sceneobject;
+    m_objects[1] = &m_sceneobject2;
+    m_sceneobject2.AddScaleToRoots(-.75);
+
+
+	// ---- animation 1 ----
+    AnimationSampler sampler0;
+    sampler0.interpolation = AnimationSampler::LINEAR;
+
+    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler0.vec3_values = {
+        XMFLOAT3(-3.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(3.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(-3.0f, 0.0f, 0.0f)
+    };
+    m_myAnimation1.m_samplers.push_back(sampler0);
+
+    AnimationSampler sampler1;
+    sampler1.interpolation = AnimationSampler::LINEAR;
+
+    sampler1.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler1.vec4_values = {
+        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
+        XMFLOAT4(0.0f, 0.7071f, 0.0f, 0.7071f),
+        XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
+        XMFLOAT4(0.0f, 0.7071f, 0.0f, -0.7071f),
+        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)
+    };
+
+    m_myAnimation1.m_samplers.push_back(sampler1);
+
+    AnimationSampler sampler2;
+    sampler2.interpolation = AnimationSampler::LINEAR;
+
+    float orbitRadius = 2.0f;
+    int numKeyframes = 8;
+    float animDuration = 4.0f;
+
+    for (int i = 0; i <= numKeyframes; ++i)
+    {
+        float t = (float)i / (float)numKeyframes;
+        float angle = t * XM_2PI;
+        float timeStamp = t * animDuration;
+
+        sampler2.timestamps.push_back(timeStamp);
+        sampler2.vec3_values.push_back(XMFLOAT3(
+            cos(angle) * orbitRadius,
+            0.0f,
+            sin(angle) * orbitRadius
+        ));
+    }
+
+    m_myAnimation1.m_samplers.push_back(sampler2);
+
+    m_myAnimation1.m_samplers.push_back(sampler2);
+
+    m_animations.push_back(&m_myAnimation1);
+    m_animationTimers.push_back(0.0f);
+
+}
+
+void Scene::initAnimation2()
+{
+    for (auto& object : m_objects)
+    {
+        object = nullptr;
+    }
+    m_objects = vector<SceneGraph*>(100);
+
+	m_sceneobject
+
+
+
+
+    AnimationSampler sampler3;
+    sampler3.interpolation = AnimationSampler::LINEAR;
+
+    sampler3.timestamps = { 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f };
+
+    sampler3.vec3_values = {
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 1.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(1.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, -1.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(-1.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f)
+    };
+    m_myAnimation2.m_samplers.push_back(sampler3);
+
+
+    m_animations.push_back(&m_myAnimation2);
+    m_animationTimers.push_back(0.0f);
 }
 
 // Cleanup function, deletes the camera
@@ -237,19 +277,20 @@ void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
     }
 }
 
-// Update function to update the scene's state
-void Scene::update(const float deltaTime)
+void Scene::animation1(const float deltaTime)
 {
-    static float animationTimer = 0;
-    animationTimer += deltaTime;
+    
+    /*
+    if (m_animationTimers[0] >= sampler1.timestamps.back())
+        m_animationTimers[0] = 0;if(m_animationPlaying) m_animationTimers[0] += deltaTime;
 
-    AnimationSampler sampler1 = m_myAnimation.m_samplers[0];
-    AnimationSampler sampler1Rot = m_myAnimation.m_samplers[1];
+    AnimationSampler sampler1 = m_animations[0]->m_samplers[0];
+    AnimationSampler sampler1Rot = m_animations[0]->m_samplers[1];
 
     int nextKeyframe1 = -1;
     for (int i = 0; i < sampler1.timestamps.size(); ++i)
     {
-        if (sampler1.timestamps[i] > animationTimer)
+        if (sampler1.timestamps[i] > m_animationTimers[0])
         {
             nextKeyframe1 = i;
             break;
@@ -262,7 +303,7 @@ void Scene::update(const float deltaTime)
     int prevKeyframe1 = nextKeyframe1 - 1;
     float prevTime1 = sampler1.timestamps[prevKeyframe1];
     float nextTime1 = sampler1.timestamps[nextKeyframe1];
-    float t1 = (animationTimer - prevTime1) / (nextTime1 - prevTime1);
+    float t1 = (m_animationTimers[0] - prevTime1) / (nextTime1 - prevTime1);
 
     DirectX::XMVECTOR prevPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[prevKeyframe1]);
     DirectX::XMVECTOR nextPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[nextKeyframe1]);
@@ -274,16 +315,19 @@ void Scene::update(const float deltaTime)
 
     DirectX::XMMATRIX object1Rotation = DirectX::XMMatrixRotationQuaternion(finalRot1);
     DirectX::XMMATRIX object1Translation = DirectX::XMMatrixTranslationFromVector(finalPos1);
-    DirectX::XMMATRIX object1Transform = object1Rotation * object1Translation;
+
+    XMMATRIX object1Scale = XMMatrixScaling(0.5f, 0.5f, 0.5f);
+
+    DirectX::XMMATRIX object1Transform = object1Scale * object1Rotation * object1Translation;
 
     m_sceneobject.GetRootNode(0)->SetMatrix(object1Transform);
 
-    AnimationSampler sampler2 = m_myAnimation.m_samplers[2]; 
+    AnimationSampler sampler2 = m_animations[0]->m_samplers[2];
 
     int nextKeyframe2 = -1;
     for (int i = 0; i < sampler2.timestamps.size(); ++i)
     {
-        if (sampler2.timestamps[i] > animationTimer)
+        if (sampler2.timestamps[i] > m_animationTimers[0])
         {
             nextKeyframe2 = i;
             break;
@@ -296,32 +340,94 @@ void Scene::update(const float deltaTime)
     int prevKeyframe2 = nextKeyframe2 - 1;
     float prevTime2 = sampler2.timestamps[prevKeyframe2];
     float nextTime2 = sampler2.timestamps[nextKeyframe2];
-    float t2 = (animationTimer - prevTime2) / (nextTime2 - prevTime2);
+    float t2 = (m_animationTimers[0] - prevTime2) / (nextTime2 - prevTime2);
 
-    DirectX::XMVECTOR prevOffset = DirectX::XMLoadFloat3(&sampler2.vec3_values[prevKeyframe2]);
-    DirectX::XMVECTOR nextOffset = DirectX::XMLoadFloat3(&sampler2.vec3_values[nextKeyframe2]);
-    DirectX::XMVECTOR orbitOffset = DirectX::XMVectorLerp(prevOffset, nextOffset, t2);
+    XMVECTOR prevOffset = XMLoadFloat3(&sampler2.vec3_values[prevKeyframe2]);
+    XMVECTOR nextOffset = XMLoadFloat3(&sampler2.vec3_values[nextKeyframe2]);
+    XMVECTOR orbitOffset = XMVectorLerp(prevOffset, nextOffset, t2);
 
-    DirectX::XMVECTOR object2FinalPos = DirectX::XMVectorAdd(finalPos1, orbitOffset);
+    XMVECTOR object2FinalPos = DirectX::XMVectorAdd(finalPos1, orbitOffset);
 
-    DirectX::XMMATRIX object2Translation = DirectX::XMMatrixTranslationFromVector(object2FinalPos);
-    m_sceneobject2.GetRootNode(0)->SetMatrix(object2Translation);
+    XMMATRIX object2Translation = DirectX::XMMatrixTranslationFromVector(object2FinalPos);
 
-    if (animationTimer >= sampler1.timestamps.back())
-        animationTimer = 0;
+    XMMATRIX object2Scale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+
+    m_sceneobject2.GetRootNode(0)->SetMatrix(object2Scale * object2Translation);
+    if (m_animationTimers[0] < -0.01)
+        m_animationTimers[0] = sampler1.timestamps.back();*/
+
+
+}
+
+void Scene::animation2(const float deltaTime)
+{
+	/*float* timer = &m_animationTimers[1];
+    if (m_animationPlaying) *timer += deltaTime;
+
+
+    AnimationSampler sampler1 = m_animations[1]->m_samplers[0];
+
+    int nextKeyframe1 = -1;
+    for (int i = 0; i < sampler1.timestamps.size(); ++i)
+    {
+        if (sampler1.timestamps[i] > m_animationTimers[1])
+        {
+            nextKeyframe1 = i;
+            break;
+        }
+    }
+
+    if (nextKeyframe1 == -1 || nextKeyframe1 == 0)
+        nextKeyframe1 = 1;
+
+
+    int prevKeyframe1 = nextKeyframe1 - 1;
+    float prevTime1 = sampler1.timestamps[prevKeyframe1];
+    float nextTime1 = sampler1.timestamps[nextKeyframe1];
+    float t1 = (m_animationTimers[1] - prevTime1) / (nextTime1 - prevTime1);
+
+
+    DirectX::XMVECTOR prevPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalPos1 = DirectX::XMVectorLerp(prevPos1, nextPos1, t1);
+
+
+    DirectX::XMMATRIX object1Translation = DirectX::XMMatrixTranslationFromVector(finalPos1);
+	DirectX::XMMATRIX object1Transform = object1Translation;
+
+    m_sceneobject.GetRootNode(0)->SetMatrix(object1Transform);
+
+    if (m_animationTimers[1] >= sampler1.timestamps.back())
+        m_animationTimers[1] = 0;
+    if (m_animationTimers[1] < -0.01)
+        m_animationTimers[1] = sampler1.timestamps.back();*/
+}
+
+// Update function to update the scene's state
+void Scene::update(const float deltaTime)
+{
+    switch (m_animationSelected)
+    {
+        case 1:
+            animation1(deltaTime);
+			break;
+        case 2:
+            animation2(deltaTime);
+            break;
+    }
 
 
 
 	//---------------rendering part---------------
 
-
+    ID3D11ShaderResourceView* nullSRV = nullptr;
 
     // Bind texture resources to pixel shader stages
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
     m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureMetallic);
     m_pImmediateContext->PSSetShaderResources(2, 1, &m_pTextureRoughness);
-	m_pImmediateContext->PSSetShaderResources(3, 1, &m_pTextureDiffuseIBL);
-	m_pImmediateContext->PSSetShaderResources(4, 1, &m_pTextureSpecularIBL);
+    m_pImmediateContext->PSSetShaderResources(3, 1, &m_pTextureDiffuseIBL);
+    m_pImmediateContext->PSSetShaderResources(4, 1, &m_pTextureSpecularIBL);
 
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
 

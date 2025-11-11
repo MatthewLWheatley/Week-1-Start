@@ -539,15 +539,13 @@ void DX11Renderer::CentreMouseInWindow(HWND hWnd)
 ImGuiWindowFlags window_flags = 0;
 bool* p_open;
 
-void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
+void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
 {
     // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // YOU will want to modify this for your own debug, controls etc - comment it out to hide the window
-    //ImGui::ShowMetricsWindow();
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Text("FPS %d", FPS);
 	ImGui::Text("Use WASD to move, RMB to look");
@@ -680,6 +678,95 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
         }
     }
     ImGui::End();
+
+	ImGui::Begin("Animations");
+    if (ImGui::Button("Stop Animation"))
+    {
+        m_pScene->m_animationSelected = 0;
+    }
+
+
+
+    if (ImGui::CollapsingHeader("Primatives"))
+    {
+        Animation* selectedAnim = nullptr;
+        switch (m_pScene->m_animationSelected)
+        {
+        case 1:
+            selectedAnim = m_pScene->m_animations[0];
+            break;
+        case 2:
+			m_pScene->initAnimation2();
+            selectedAnim = m_pScene->m_animations[1];
+            break;
+        default:
+            break;
+        }
+        if (!selectedAnim) goto ESCAPE;
+        if (ImGui::TreeNode("Primative Controls"))
+        {
+            ImGui::Checkbox("Play Animation", &m_pScene->m_animationPlaying);
+            ImGui::SameLine();
+            ImGui::DragFloat("Timer ", &m_pScene->m_animationTimers[0], 0.01f);
+
+            if (ImGui::TreeNode(("KeyFrames")))
+            {
+
+                int count = 0;
+                for (auto& sample : selectedAnim->m_samplers)
+                {
+                    
+                    if (ImGui::TreeNode(("KeyFrame## " + std::to_string(count)).c_str())) {
+                        int countKeyframes = 0;
+                        for (auto& step : sample.timestamps)
+                        {
+                            ImGui::DragFloat(("TimeStamp: " + std::to_string(countKeyframes)).c_str(), &step, 0.01f);
+                            countKeyframes++;
+                        }
+                        ImGui::TreePop();
+                    }
+                    count++;
+                }
+                ImGui::TreePop();
+            }
+
+            if (ImGui::TreeNode(("Samplers")))
+            {
+                int count = 0;
+                for (auto& sample : selectedAnim->m_samplers)
+                {
+                    if (ImGui::TreeNode(("Sample " + std::to_string(count)).c_str())) {
+                        int countKeyframes = 0;
+                        if (sample.vec3_values.size() != 0)
+                            for (auto& vec3 : sample.vec3_values)
+                            {
+                                ImGui::DragFloat3(("keyFrame: " + std::to_string(countKeyframes)).c_str(), &vec3.x, 0.01f);
+                                countKeyframes++;
+                            }
+                        else
+                            for (auto& vec4 : sample.vec4_values)
+                            {
+                                ImGui::DragFloat4(("keyFrame: " + std::to_string(countKeyframes)).c_str(), &vec4.x, 0.01f);
+                                countKeyframes++;
+                            }
+                        ImGui::TreePop();
+                    }
+                    count++;
+                }
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
+        }
+    ESCAPE:
+        if (ImGui::Button("Animation 1")) 
+        {
+            m_pScene->initAnimation1();
+            m_pScene->m_animationSelected = 1; 
+        }
+        if (ImGui::Button("Animation 2")) m_pScene->m_animationSelected = 2;
+    }
+
+    ImGui::End();
 }
 
 void DX11Renderer::completeIMGUIDraw()
@@ -703,7 +790,7 @@ void DX11Renderer::update(const float deltaTime)
         frameCounter = 0;
     }
 
-    startIMGUIDraw(FPS);
+    startIMGUIDraw(FPS,deltaTime);
 
     // Clear the back buffer
     float blueish[4] = { 0.2, 0.2, 1, 1 };

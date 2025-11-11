@@ -34,10 +34,12 @@ public:
 	~Scene() {}
 
 	HRESULT		init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, DX11Renderer* renderer);
+	
 	void		cleanUp();
 	Camera*		getCamera() { return m_pCamera; }
 
 	void setLightPos(int lightIndex, XMFLOAT4 pos);
+
 
 	void		update(const float deltaTime);
 	
@@ -56,10 +58,13 @@ public:
 
 	DX11Renderer* m_pRenderer = nullptr;
 
+
+	void initAnimation1();
+
+	void initAnimation2();
+
 private:
 	void setupLightProperties();
-
-
 public:
 	Camera* m_pCamera;
 	
@@ -79,8 +84,14 @@ public:
 
 	vector<SceneGraph*> m_objects = vector<SceneGraph*>(100);
 
-
-	Animation m_myAnimation;
+	Animation m_myAnimation1;
+	Animation m_myAnimation2;
+	vector<Animation*> m_animations;
+	vector<float> m_animationTimers;
+	void animation1(const float deltaTime);
+	void animation2(const float deltaTime);
+	int m_animationSelected = 0;
+	bool m_animationPlaying = false;
 
 
 private:
