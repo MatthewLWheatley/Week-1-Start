@@ -5,10 +5,9 @@
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_impl_dx11.h"
 #include "d3dcompiler.h"
-#include <iostream>
 
 // TRUE - PBR Rendering / FALSE - Animation Rendering
-constexpr bool PBR_MODE = TRUE;
+constexpr bool PBR_MODE = true;
 
 #pragma region Class lifetime
 
@@ -31,7 +30,7 @@ HRESULT DX11Renderer::init(HWND hwnd)
     // Compile the vertex shader
     ID3DBlob* pVSBlob = nullptr;
     if constexpr (PBR_MODE) 
-        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "VS", "vs_4_0", &pVSBlob);
+        hr = DX11Renderer::compileShaderFromFile(L"pbr_shader.hlsl", "VS", "vs_4_0", &pVSBlob);
     else
         hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "VS", "vs_4_0", &pVSBlob);
     
@@ -78,7 +77,7 @@ HRESULT DX11Renderer::init(HWND hwnd)
     ID3DBlob* pPSBlob = nullptr;
 
     if constexpr (PBR_MODE)
-        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PS_PBR", "ps_4_0", &pPSBlob);
+        hr = DX11Renderer::compileShaderFromFile(L"pbr_shader.hlsl", "PS_Normal", "ps_4_0", &pPSBlob);
     else
         hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "PS", "ps_4_0", &pPSBlob);
 
@@ -96,23 +95,6 @@ HRESULT DX11Renderer::init(HWND hwnd)
     if (FAILED(hr))
         return hr;
 
-    // Compile the pixel shader
-    pPSBlob = nullptr;
-
-    hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
-    
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-        return hr;
-    }
-
-    // Create the pixel shader
-    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelSolidShader);
-    pPSBlob->Release();
-    if (FAILED(hr))
-        return hr;
 
     return hr;
 }
@@ -414,43 +396,12 @@ void DX11Renderer::initIMGUI(HWND hwnd)
 
 void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-
-    float movement = 0.02f;
+    float movement = 0.2f;
     static bool mouseDown = false;
 
     extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
     if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
         return;
-
-    if (GetAsyncKeyState('W')) 
-    {
-        m_pScene->getCamera()->moveForward(movement);
-    }
-    if (GetAsyncKeyState('A'))
-    {
-        m_pScene->getCamera()->strafeLeft(movement);
-    }
-    if (GetAsyncKeyState('S'))
-    {
-        m_pScene->getCamera()->moveBackward(movement);
-    }
-    if (GetAsyncKeyState('D'))
-    {
-        m_pScene->getCamera()->strafeRight(movement);
-    }
-    // Handle M key with proper debouncing
-    static bool mKeyPressed = false;
-    if (GetAsyncKeyState('M'))
-    {
-        if (!mKeyPressed) {  // Only trigger once per press
-            mKeyPressed = true;
-            m_pScene->textureIndex = (m_pScene->textureIndex + 1) % 2;  // Cycle 0->1->0
-        }
-    }
-    else
-    {
-        mKeyPressed = false;  // Key released, ready for next press
-    }
 
     switch (message)
     {
@@ -461,7 +412,17 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case 27:
             PostQuitMessage(0);
             break;
-		case 'm':
+        case 'W':
+            m_pScene->getCamera()->moveForward(movement);
+            break;
+        case 'A':
+            m_pScene->getCamera()->strafeLeft(movement);
+            break;
+        case 'S':
+            m_pScene->getCamera()->moveBackward(movement);
+            break;
+        case 'D':
+            m_pScene->getCamera()->strafeRight(movement);
             break;
         }
         break;
@@ -504,7 +465,6 @@ void DX11Renderer::input(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // (You may need to convert POINT to POINTS or use the deltas as is)
         m_pScene->getCamera()->updateLookAt({ static_cast<short>(delta.x), static_cast<short>(delta.y) });
 
-
         // Recenter the cursor
         SetCursorPos(windowCenter.x, windowCenter.y);
     }
@@ -536,8 +496,6 @@ void DX11Renderer::CentreMouseInWindow(HWND hWnd)
     SetCursorPos(center.x, center.y);
 }
 
-ImGuiWindowFlags window_flags = 0;
-bool* p_open;
 
 void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 {
@@ -548,144 +506,9 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
 
     // YOU will want to modify this for your own debug, controls etc - comment it out to hide the window
     //ImGui::ShowMetricsWindow();
-    ImGui::SetWindowFontScale(1.0f);
+    ImGui::SetWindowFontScale(4.0f);
     ImGui::Text("FPS %d", FPS);
-	ImGui::Text("Use WASD to move, RMB to look");
-	ImGui::Text("Press M to change texture");
-	ImGui::Text("Texture Index: %d", m_pScene->textureIndex);
-	
-    if (m_pScene->getCamera()) {
-        XMFLOAT3 camPos = m_pScene->getCamera()->getPosition();
-        if (ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f)) {
-            m_pScene->getCamera()->setPosition(camPos);
-        }
-
-        XMFLOAT3 camRot = m_pScene->getCamera()->getLookDir();
-        if (ImGui::DragFloat2("Camera Look", &camRot.x, 0.1f)) {
-            m_pScene->getCamera()->setLookDir(camRot);
-        }
-    }
-    XMFLOAT3 clr = m_pScene->albedo;
-    if (ImGui::ColorEdit3("Color", &clr.x)) 
-    {
-		m_pScene->albedo = clr;
-    }
-    ImGui::SliderFloat("metal", &m_pScene->metal, 0, 1, "%.003f");
-    ImGui::SliderFloat("rough", &m_pScene->rough, 0, 1, "%.003f");
-    ImGui::SliderFloat("texture", &m_pScene->textureSelect, 0, 1, "%1.0f");
-    ImGui::SliderFloat("type", &m_pScene->type, 0, 2, "%1.0f");
-
-
-    ImGui::Begin("Window A");
-    for (int x = 0; x < m_pScene->m_objects.size(); x++) 
-    {
-		if (!m_pScene->m_objects[x]) continue;
-        std::string objName = "Object " + std::to_string(x);
-        if (ImGui::CollapsingHeader(objName.c_str())) 
-        {
-            XMMATRIX temp = m_pScene->m_objects[x]->GetMatrixOfRoot();
-
-            XMVECTOR scaleV, rotQ, transV;
-			XMMatrixDecompose(&scaleV, &rotQ, &transV, temp);
-
-			XMFLOAT3 objPos, scale;
-			XMStoreFloat3(&objPos, transV);
-			XMStoreFloat3(&scale, scaleV);
-
-            XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
-			XMFLOAT4 quat; 
-            XMStoreFloat4(&quat, rotQ);
-            XMFLOAT3 rotRad;
-            float sinr_cosp = 2.0f * (quat.w * quat.x + quat.y * quat.z);
-            float cosr_cosp = 1.0f - 2.0f * (quat.x * quat.x + quat.y * quat.y);
-            rotRad.x = atan2f(sinr_cosp, cosr_cosp);
-
-            float sinp = 2.0f * (quat.w * quat.y - quat.z * quat.x);
-            if (fabsf(sinp) >= 1.0f)
-                rotRad.y = copysignf(XM_PI / 2.0f, sinp);
-            else
-                rotRad.y = asinf(sinp);
-
-            float siny_cosp = 2.0f * (quat.w * quat.z + quat.x * quat.y);
-            float cosy_cosp = 1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z);
-            rotRad.z = atan2f(siny_cosp, cosy_cosp);
-
-
-            XMFLOAT3 rotDeg = {XMConvertToDegrees( rotRad.x), 
-                XMConvertToDegrees(rotRad.y), 
-                XMConvertToDegrees(rotRad.z)};
-
-            if (ImGui::DragFloat3(("Scale##" + std::to_string(x)).c_str(), &scale.x, 0.1f)) {
-                if (scale.x == 0) scale.x = 0.01f;
-                if (scale.y == 0) scale.y = 0.01f;
-                if (scale.z == 0) scale.z = 0.01f;
-                XMVECTOR scaleV = XMLoadFloat3(&scale);
-                XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotDeg.x), XMConvertToRadians(rotDeg.y), XMConvertToRadians(rotDeg.z));
-                XMMATRIX out = XMMatrixIdentity();
-                XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
-                XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
-                XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
-                out = scaleM * rotM * posM;
-                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
-            }
-
-            if (ImGui::DragFloat3(("Rotation##" + std::to_string(x)).c_str(), &rotDeg.x, 0.1f)) {
-                XMVECTOR scaleV = XMLoadFloat3(&scale);
-                XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotDeg.x), XMConvertToRadians(rotDeg.y), XMConvertToRadians(rotDeg.z));
-                XMMATRIX out = XMMatrixIdentity();
-                XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
-                XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
-                XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
-                out = scaleM * rotM * posM;
-                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
-            }
-
-            if (ImGui::DragFloat3(("Position##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
-                XMVECTOR scaleV = XMLoadFloat3(&scale);
-				XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotDeg.x), XMConvertToRadians(rotDeg.y), XMConvertToRadians(rotDeg.z));
-                XMMATRIX out = XMMatrixIdentity();
-                XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
-                XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
-                XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
-                out = scaleM * rotM * posM;
-                m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
-            }
-		}
-    }
-    ImGui::End();
-
-    ImGui::Begin("Window B");
-    if (ImGui::Button("add light")) 
-    {
-        if (m_pScene->lightCount + 1 < MAX_LIGHTS) {
-            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = true;
-            m_pScene->lightCount++;
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("minus light"))
-    {
-        if (m_pScene->lightCount > 0) {
-            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = false;
-            m_pScene->lightCount--;
-        }
-    }
-    for (int x = 0; x < MAX_LIGHTS; x++)
-    {
-        if (!m_pScene->m_lightProperties.Lights[x].Enabled) continue;
-        std::string objName = "Light " + std::to_string(x);
-        if (ImGui::CollapsingHeader(objName.c_str()))
-        {
-            XMFLOAT4 objPos = m_pScene->m_lightProperties.Lights[x].Position;
-
-
-            if (ImGui::DragFloat3(("LPosition##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
-                m_pScene->m_lightProperties.Lights[x].Position = objPos;
-            }
-        }
-    }
-    ImGui::End();
-
+    ImGui::SetWindowFontScale(1.0f);
     ImGui::Spacing();
 
     // example usage

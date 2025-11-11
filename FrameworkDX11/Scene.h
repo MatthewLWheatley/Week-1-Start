@@ -37,36 +37,19 @@ public:
 	void		cleanUp();
 	Camera*		getCamera() { return m_pCamera; }
 
-	void setLightPos(int lightIndex, XMFLOAT4 pos);
-
 	void		update(const float deltaTime);
 	
 	const LightPropertiesConstantBuffer& getLightProperties() { return m_lightProperties; }
 
-	int textureIndex = 0;
-	XMFLOAT3 albedo = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	float metal = 0.0f;
-	float rough = 0.0f;
-	float type = 2.0f;
-	float textureSelect = 1.0f;
-	int lightCount = 2;
-
-
-	friend class Dx11Renderer;
-
-	DX11Renderer* m_pRenderer = nullptr;
-
 private:
 	void setupLightProperties();
-
 
 public:
 	Camera* m_pCamera;
 	
 	Microsoft::WRL::ComPtr <ID3D11Device>			m_pd3dDevice;
 	Microsoft::WRL::ComPtr <ID3D11DeviceContext>	m_pImmediateContext;
-	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBufferlight;
-	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBufferSwitch;
+	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBuffer;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pLightConstantBuffer;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pCustomConstantBuffer;
 
@@ -74,18 +57,7 @@ public:
 	LightPropertiesConstantBuffer m_lightProperties;
 	IRenderingContext m_ctx;
 	SceneGraph m_sceneobject;
-	SceneGraph m_sceneobject2;
-	SceneGraph m_sceneobject3;
 
-	vector<SceneGraph*> m_objects = vector<SceneGraph*>(100);
-
-	DirectX::XMFLOAT3 m_startPos = { -3.0f, 0.0f, 0.0f };
-	DirectX::XMFLOAT3 m_endPos = { 3.0f, 0.0f, 0.0f };
-	float m_t = 2.0f;
-	float m_direction = 1.0f; // To control the ping-pong
-
-	DirectX::XMFLOAT4 m_startRot;
-	DirectX::XMFLOAT4 m_endRot;
 
 private:
 	ID3D11ShaderResourceView* m_pTextureDiffuse;
@@ -95,14 +67,6 @@ private:
 	ID3D11ShaderResourceView* m_pTextureAmbientOcclusion;
 	ID3D11ShaderResourceView* m_pTextureSpecularIBL;
 	ID3D11ShaderResourceView* m_pTextureDiffuseIBL;
-
-	ID3D11ShaderResourceView* m_pPaveTextureDiffuse;
-	ID3D11ShaderResourceView* m_pPaveTextureNormal;
-	ID3D11ShaderResourceView* m_pPaveTextureMetallic;
-	ID3D11ShaderResourceView* m_pPaveTextureRoughness;
-	ID3D11ShaderResourceView* m_pPaveTextureAmbientOcclusion;
-	ID3D11ShaderResourceView* m_pPaveTextureSpecularIBL;
-	ID3D11ShaderResourceView* m_pPaveTextureDiffuseIBL;
 
 	ID3D11SamplerState* m_pSamplerLinear;
 };

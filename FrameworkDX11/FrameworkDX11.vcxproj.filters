@@ -193,7 +193,7 @@
     <FxCompile Include="skinned_shader.hlsl">
       <Filter>Animation</Filter>
     </FxCompile>
-    <FxCompile Include="shader_me.hlsl">
+    <FxCompile Include="pbr_shader.hlsl">
       <Filter>PBR</Filter>
     </FxCompile>
   </ItemGroup>
