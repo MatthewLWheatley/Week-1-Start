@@ -23,6 +23,8 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     
+    m_animations.push_back(&m_myAnimation1);
+    m_animations.push_back(&m_myAnimation2);
     
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
@@ -174,7 +176,7 @@ void Scene::initAnimation1()
 
     m_myAnimation1.m_samplers.push_back(sampler2);
 
-    m_animations.push_back(&m_myAnimation1);
+    m_animations[0] = &m_myAnimation1;
     m_animationTimers.push_back(0.0f);
 
 }
@@ -187,13 +189,16 @@ void Scene::initAnimation2()
     }
     m_objects = vector<SceneGraph*>(100);
 
-	m_sceneobject
-
-
-
+    SceneNode* bodyNode = m_sceneobject.CreateRootNode();
+    bodyNode->LoadSphere(m_ctx);
+    bodyNode->AddTranslation({ 0.0, 0, 2.0 });
+    SceneNode* headNode = bodyNode->CreateChildNode();
+    headNode->LoadSphere(m_ctx);
 
     AnimationSampler sampler3;
     sampler3.interpolation = AnimationSampler::LINEAR;
+
+    m_objects[0] = &m_sceneobject;
 
     sampler3.timestamps = { 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f };
 
@@ -211,7 +216,7 @@ void Scene::initAnimation2()
     m_myAnimation2.m_samplers.push_back(sampler3);
 
 
-    m_animations.push_back(&m_myAnimation2);
+    m_animations[1] = &m_myAnimation2;
     m_animationTimers.push_back(0.0f);
 }
 
@@ -262,13 +267,6 @@ void Scene::setupLightProperties()
     
 }
 
-//void Scene::setTexture(int tId)
-//{
-//    // This function can be expanded to change textures based on the index
-//    // textureIndex is already set by the caller, so don't overwrite it
-//    std::cout << "Selected texture index: " << tId << std::endl;
-//}
-
 void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
 {
     if (lightIndex >= 0 && lightIndex < MAX_LIGHTS) 
@@ -279,14 +277,12 @@ void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
 
 void Scene::animation1(const float deltaTime)
 {
-    
-    /*
-    if (m_animationTimers[0] >= sampler1.timestamps.back())
-        m_animationTimers[0] = 0;if(m_animationPlaying) m_animationTimers[0] += deltaTime;
-
     AnimationSampler sampler1 = m_animations[0]->m_samplers[0];
     AnimationSampler sampler1Rot = m_animations[0]->m_samplers[1];
 
+    
+    if (m_animationTimers[0] >= sampler1.timestamps.back())
+        m_animationTimers[0] = 0;if(m_animationPlaying) m_animationTimers[0] += deltaTime;
     int nextKeyframe1 = -1;
     for (int i = 0; i < sampler1.timestamps.size(); ++i)
     {
@@ -354,7 +350,7 @@ void Scene::animation1(const float deltaTime)
 
     m_sceneobject2.GetRootNode(0)->SetMatrix(object2Scale * object2Translation);
     if (m_animationTimers[0] < -0.01)
-        m_animationTimers[0] = sampler1.timestamps.back();*/
+        m_animationTimers[0] = sampler1.timestamps.back();
 
 
 }

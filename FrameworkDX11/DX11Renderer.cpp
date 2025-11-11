@@ -696,7 +696,6 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
             selectedAnim = m_pScene->m_animations[0];
             break;
         case 2:
-			m_pScene->initAnimation2();
             selectedAnim = m_pScene->m_animations[1];
             break;
         default:
@@ -763,7 +762,11 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
             m_pScene->initAnimation1();
             m_pScene->m_animationSelected = 1; 
         }
-        if (ImGui::Button("Animation 2")) m_pScene->m_animationSelected = 2;
+        if (ImGui::Button("Animation 2"))
+        {
+            m_pScene->initAnimation2();
+            m_pScene->m_animationSelected = 2;
+        }
     }
 
     ImGui::End();

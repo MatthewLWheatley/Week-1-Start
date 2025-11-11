@@ -142,6 +142,7 @@ public:
 class SceneNode
 {
 public:
+    SceneNode* CreateChildNode();
     SceneNode(bool useDebugAnimation = false);
 
     ScenePrimitive* CreateEmptyPrimitive();
@@ -239,6 +240,8 @@ public:
         return nullptr;
 	}
 
+    SceneNode* CreateRootNode();
+
 private:
 
     
@@ -271,6 +274,7 @@ private:
                     SceneNode &node,
                     const XMMATRIX &parentWorldMtrx,
                     const float deltaTime);
+
 
     
 

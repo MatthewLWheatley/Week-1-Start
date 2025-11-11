@@ -704,9 +704,9 @@ void SceneGraph::RenderNode(IRenderingContext &ctx,
     ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
     if (node.m_skeleton.IsLoaded())
     {
-        if (node.m_skeleton.CurrentAnimation() == nullptr)
+        /*if (node.m_skeleton.CurrentAnimation() == nullptr)
             node.m_skeleton.PlayAnimation(0);
-        node.m_skeleton.Update(deltaTime);
+        */node.m_skeleton.Update(deltaTime);
     }
 
     // Draw current node
@@ -796,6 +796,21 @@ ScenePrimitive::~ScenePrimitive()
     Destroy();
 }
 
+SceneNode* SceneGraph::CreateRootNode()
+{
+    // Add a new root node to our vector of root nodes
+    mRootNodes.emplace_back(true); // 'true' means this is a root node
+    // Return a pointer to the new node we just created
+    return &mRootNodes.back();
+}
+
+SceneNode* SceneNode::CreateChildNode()
+{
+    // Add a new child node to this node's vector of children
+    mChildren.emplace_back(false); // 'false' means this is not a root node
+    // Return a pointer to the new child
+    return &mChildren.back();
+}
 
 bool ScenePrimitive::CreateQuad(IRenderingContext & ctx)
 {
@@ -2065,7 +2080,7 @@ bool SceneNode::LoadSphere(IRenderingContext& ctx)
     bool ok = sphere.CreateSphere(ctx);
 
     mPrimitives.push_back(std::move(sphere));
-
+    
     return ok;
 }
 
