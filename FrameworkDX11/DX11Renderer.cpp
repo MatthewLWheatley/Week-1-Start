@@ -497,30 +497,234 @@ void DX11Renderer::CentreMouseInWindow(HWND hWnd)
 }
 
 
-void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
+void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
 {
     // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // YOU will want to modify this for your own debug, controls etc - comment it out to hide the window
-    //ImGui::ShowMetricsWindow();
-    ImGui::SetWindowFontScale(4.0f);
-    ImGui::Text("FPS %d", FPS);
     ImGui::SetWindowFontScale(1.0f);
-    ImGui::Spacing();
+    ImGui::Text("FPS %d", FPS);
+	ImGui::Text("Use WASD to move, RMB to look");
+	ImGui::Text("Press M to change texture");
+	ImGui::Text("Texture Index: %d", m_pScene->textureIndex);
+	
+    if (m_pScene->getCamera()) {
+        XMFLOAT3 camPos = m_pScene->getCamera()->getPosition();
+        if (ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f)) {
+            m_pScene->getCamera()->setPosition(camPos);
+        }
 
-    // example usage
-    /*if (ImGui::RadioButton("Single threaded CPU", g_ttype == use_cpu_singlethread)) g_ttype = use_cpu_singlethread;
-    if (ImGui::RadioButton("Multi threaded CPU", g_ttype == use_cpu_multithread)) g_ttype = use_cpu_multithread;
-    if (ImGui::RadioButton("GPU", g_ttype == use_gpu)) g_ttype = use_gpu;
+        XMFLOAT3 camRot = m_pScene->getCamera()->getLookDir();
+        if (ImGui::DragFloat2("Camera Look", &camRot.x, 0.1f)) {
+            m_pScene->getCamera()->setLookDir(camRot);
+        }
+    }
+    XMFLOAT3 clr = m_pScene->albedo;
+    if (ImGui::ColorEdit3("Color", &clr.x)) 
+    {
+		m_pScene->albedo = clr;
+    }
+    ImGui::SliderFloat("metal", &m_pScene->metal, 0, 1, "%.003f");
+    ImGui::SliderFloat("rough", &m_pScene->rough, 0, 1, "%.003f");
+    ImGui::SliderFloat("texture", &m_pScene->textureSelect, 0, 1, "%1.0f");
+    ImGui::SliderFloat("type", &m_pScene->type, 0, 2, "%1.0f");
 
-    ImGui::Spacing();
 
-    ImGui::SliderInt("Number of Cubes", &g_cube_count, 2, max_number_of_boxes);*/
+    ImGui::Begin("Window A");
+    for (int x = 0; x < m_pScene->m_objects.size(); x++) 
+    {
+		if (!m_pScene->m_objects[x]) continue;
+        std::string objName = "Object " + std::to_string(x);
+        if (ImGui::CollapsingHeader(objName.c_str())) 
+        {
+            XMMATRIX temp = m_pScene->m_objects[x]->GetMatrixOfRoot();
 
-    
+            XMVECTOR scaleV, rotQ, transV;
+			XMMatrixDecompose(&scaleV, &rotQ, &transV, temp);
+			XMFLOAT3 objPos, scale;
+			XMStoreFloat3(&objPos, transV);
+			XMStoreFloat3(&scale, scaleV);
+
+            
+            XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+            XMFLOAT4 quat;
+
+            XMStoreFloat4(&quat, rotQ);
+
+            XMFLOAT3 rotRad;
+
+            float sinr_cosp = 2.0f * (quat.w * quat.x + quat.y * quat.z);
+            float cosr_cosp = 1.0f - 2.0f * (quat.x * quat.x + quat.y * quat.y);
+            rotRad.x = atan2f(sinr_cosp, cosr_cosp);
+
+            float sinp = 2.0f * (quat.w * quat.y - quat.z * quat.x);
+            if (fabsf(sinp) >= 1.0f)
+                rotRad.y = copysignf(XM_PI / 2.0f, sinp);
+            else
+                rotRad.y = asinf(sinp);
+
+            float siny_cosp = 2.0f * (quat.w * quat.z + quat.x * quat.y);
+            float cosy_cosp = 1.0f - 2.0f * (quat.y * quat.y + quat.z * quat.z);
+            rotRad.z = atan2f(siny_cosp, cosy_cosp);
+
+
+            XMFLOAT3 rotDeg = {XMConvertToDegrees( rotRad.x), 
+                XMConvertToDegrees(rotRad.y), 
+                XMConvertToDegrees(rotRad.z)};
+			rotDeg = m_pScene->m_objects[x]->mRootNodes[0].mEulerRotation;
+			scale = m_pScene->m_objects[x]->mRootNodes[0].mScale;
+			objPos = m_pScene->m_objects[x]->mRootNodes[0].mTranslation;
+
+            if (ImGui::DragFloat3(("Scale##" + std::to_string(x)).c_str(), &scale.x, 0.1f)) {
+
+            }
+
+            if (ImGui::DragFloat3(("Rotation##" + std::to_string(x)).c_str(), &rotDeg.x, 0.1f)) {
+            }
+
+            if (ImGui::DragFloat3(("Position##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
+            }
+
+            if (scale.x == 0) scale.x = 0.001f;
+            if (scale.y == 0) scale.y = 0.001;
+            if (scale.z == 0) scale.z = 0.001f;
+            scaleV = XMLoadFloat3(&scale);
+            m_pScene->m_objects[x]->mRootNodes[0].mEulerRotation = rotDeg;
+			m_pScene->m_objects[x]->mRootNodes[0].mScale = scale;
+			m_pScene->m_objects[x]->mRootNodes[0].mTranslation = objPos;
+            rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotDeg.x), XMConvertToRadians(rotDeg.y), XMConvertToRadians(rotDeg.z));
+            XMMATRIX out = XMMatrixIdentity();
+            XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
+            XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
+            rotM = XMMatrixRotationQuaternion(rotQ);
+            out = scaleM * rotM * posM;
+            m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
+		}
+    }
+    ImGui::End();
+
+    ImGui::Begin("Window B");
+    if (ImGui::Button("add light")) 
+    {
+        if (m_pScene->lightCount + 1 < MAX_LIGHTS) {
+            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = true;
+            m_pScene->lightCount++;
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("minus light"))
+    {
+        if (m_pScene->lightCount > 0) {
+            m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = false;
+            m_pScene->lightCount--;
+        }
+    }
+    for (int x = 0; x < MAX_LIGHTS; x++)
+    {
+        if (!m_pScene->m_lightProperties.Lights[x].Enabled) continue;
+        std::string objName = "Light " + std::to_string(x);
+        if (ImGui::CollapsingHeader(objName.c_str()))
+        {
+            XMFLOAT4 objPos = m_pScene->m_lightProperties.Lights[x].Position;
+
+
+            if (ImGui::DragFloat3(("LPosition##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
+                m_pScene->m_lightProperties.Lights[x].Position = objPos;
+            }
+        }
+    }
+    ImGui::End();
+
+	ImGui::Begin("Animations");
+    if (ImGui::Button("Stop Animation"))
+    {
+        m_pScene->m_animationSelected = 0;
+    }
+
+
+
+    if (ImGui::CollapsingHeader("Primatives"))
+    {
+        Animation* selectedAnim = nullptr;
+        switch (m_pScene->m_animationSelected)
+        {
+        case 1:
+            selectedAnim = m_pScene->m_animations[0];
+            break;
+        case 2:
+			m_pScene->initAnimation2();
+            selectedAnim = m_pScene->m_animations[1];
+            break;
+        default:
+            break;
+        }
+        if (!selectedAnim) goto ESCAPE;
+        if (ImGui::TreeNode("Primative Controls"))
+        {
+            ImGui::Checkbox("Play Animation", &m_pScene->m_animationPlaying);
+            ImGui::SameLine();
+            ImGui::DragFloat("Timer ", &m_pScene->m_animationTimers[0], 0.01f);
+
+            if (ImGui::TreeNode(("KeyFrames")))
+            {
+
+                int count = 0;
+                for (auto& sample : selectedAnim->m_samplers)
+                {
+                    
+                    if (ImGui::TreeNode(("KeyFrame## " + std::to_string(count)).c_str())) {
+                        int countKeyframes = 0;
+                        for (auto& step : sample.timestamps)
+                        {
+                            ImGui::DragFloat(("TimeStamp: " + std::to_string(countKeyframes)).c_str(), &step, 0.01f);
+                            countKeyframes++;
+                        }
+                        ImGui::TreePop();
+                    }
+                    count++;
+                }
+                ImGui::TreePop();
+            }
+
+            if (ImGui::TreeNode(("Samplers")))
+            {
+                int count = 0;
+                for (auto& sample : selectedAnim->m_samplers)
+                {
+                    if (ImGui::TreeNode(("Sample " + std::to_string(count)).c_str())) {
+                        int countKeyframes = 0;
+                        if (sample.vec3_values.size() != 0)
+                            for (auto& vec3 : sample.vec3_values)
+                            {
+                                ImGui::DragFloat3(("keyFrame: " + std::to_string(countKeyframes)).c_str(), &vec3.x, 0.01f);
+                                countKeyframes++;
+                            }
+                        else
+                            for (auto& vec4 : sample.vec4_values)
+                            {
+                                ImGui::DragFloat4(("keyFrame: " + std::to_string(countKeyframes)).c_str(), &vec4.x, 0.01f);
+                                countKeyframes++;
+                            }
+                        ImGui::TreePop();
+                    }
+                    count++;
+                }
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
+        }
+    ESCAPE:
+        if (ImGui::Button("Animation 1")) 
+        {
+            m_pScene->initAnimation1();
+            m_pScene->m_animationSelected = 1; 
+        }
+        if (ImGui::Button("Animation 2")) m_pScene->m_animationSelected = 2;
+    }
+
+    ImGui::End();
 }
 
 void DX11Renderer::completeIMGUIDraw()
@@ -544,7 +748,7 @@ void DX11Renderer::update(const float deltaTime)
         frameCounter = 0;
     }
 
-    startIMGUIDraw(FPS);
+    startIMGUIDraw(FPS,deltaTime);
 
     // Clear the back buffer
     float blueish[4] = { 0.2, 0.2, 1, 1 };

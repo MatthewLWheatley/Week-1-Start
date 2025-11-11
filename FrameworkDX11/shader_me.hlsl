@@ -24,6 +24,8 @@ Texture2D MetallicMap : register(t1); // Normal map for lighting effects
 Texture2D RoughnessMap : register(t2); // Roughness map (PBR)
 TextureCube iblSpecular : register(t3);
 TextureCube iblIrradiance : register(t4);
+Texture2D NormalMap : register(t5); // Normal map for lighting effects
+Texture2D DisplacementMap : register(t6); // Displacement map for parallax effects
 
 SamplerState samLinear : register(s0); // Texture sampler for linear filtering
 
@@ -94,7 +96,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(output.Pos, Projection);
 
     // Transform the normal vector from object space to world space
-    output.Norm = mul(float4(input.Norm, 0), World).xyz;
+    output.Norm = normalize(mul(float4(input.Norm, 0), World)).xyz;
 
     output.Tex = input.Tex; // Pass the texture coordinates along
 

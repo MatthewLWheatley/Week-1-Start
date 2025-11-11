@@ -50,7 +50,7 @@ private: // methods
 	HRESULT initDevice(HWND hwnd);
 	void    cleanupDevice();
 	void	initIMGUI(HWND hwnd);
-	void	startIMGUIDraw(const unsigned int FPS);
+	void	startIMGUIDraw(const unsigned int FPS, const float deltaTime);
 	void	completeIMGUIDraw();
 	void	CentreMouseInWindow(HWND hWnd);
 
