@@ -187,7 +187,6 @@ void Scene::initAnimation2()
     }
     m_objects = vector<SceneGraph*>(100);
 
-	m_sceneobject
 
 
 
@@ -279,13 +278,12 @@ void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
 
 void Scene::animation1(const float deltaTime)
 {
-    
-    /*
-    if (m_animationTimers[0] >= sampler1.timestamps.back())
-        m_animationTimers[0] = 0;if(m_animationPlaying) m_animationTimers[0] += deltaTime;
-
     AnimationSampler sampler1 = m_animations[0]->m_samplers[0];
     AnimationSampler sampler1Rot = m_animations[0]->m_samplers[1];
+
+    
+    if (m_animationTimers[0] >= sampler1.timestamps.back())
+        m_animationTimers[0] = 0;if(m_animationPlaying) m_animationTimers[0] += deltaTime;
 
     int nextKeyframe1 = -1;
     for (int i = 0; i < sampler1.timestamps.size(); ++i)
@@ -354,7 +352,7 @@ void Scene::animation1(const float deltaTime)
 
     m_sceneobject2.GetRootNode(0)->SetMatrix(object2Scale * object2Translation);
     if (m_animationTimers[0] < -0.01)
-        m_animationTimers[0] = sampler1.timestamps.back();*/
+        m_animationTimers[0] = sampler1.timestamps.back();
 
 
 }
