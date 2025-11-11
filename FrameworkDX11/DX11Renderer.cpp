@@ -680,19 +680,6 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS)
         }
     }
     ImGui::End();
-
-    ImGui::Spacing();
-
-    // example usage
-    /*if (ImGui::RadioButton("Single threaded CPU", g_ttype == use_cpu_singlethread)) g_ttype = use_cpu_singlethread;
-    if (ImGui::RadioButton("Multi threaded CPU", g_ttype == use_cpu_multithread)) g_ttype = use_cpu_multithread;
-    if (ImGui::RadioButton("GPU", g_ttype == use_gpu)) g_ttype = use_gpu;
-
-    ImGui::Spacing();
-
-    ImGui::SliderInt("Number of Cubes", &g_cube_count, 2, max_number_of_boxes);*/
-
-    
 }
 
 void DX11Renderer::completeIMGUIDraw()

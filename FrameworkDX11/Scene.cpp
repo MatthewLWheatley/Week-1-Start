@@ -38,12 +38,60 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     //    DirectX::XM_PI // 180 degrees
     //));
 
-	AnimationSampler posSampler;
-    posSampler.vec3_values.push_back(DirectX::XMFLOAT3(-3.0f, 0.0f, 0.0f));
-    posSampler.vec3_values.push_back(DirectX::XMFLOAT3(3.0f, 0.0f, 0.0f));
-	posSampler.timestamps.push_back(0.0);
-	posSampler.timestamps.push_back(2.0f);
-	m_myAnimation.m_samplers.push_back(posSampler);
+    AnimationSampler sampler0;
+    sampler0.interpolation = AnimationSampler::LINEAR;
+
+    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler0.vec3_values = {
+        XMFLOAT3(-3.0f, 0.0f, 0.0f), 
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(3.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(-3.0f, 0.0f, 0.0f)
+    };
+
+    m_myAnimation.m_samplers.push_back(sampler0);
+
+    AnimationSampler sampler1;
+    sampler1.interpolation = AnimationSampler::LINEAR;
+
+    sampler1.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler1.vec4_values = {
+        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
+        XMFLOAT4(0.0f, 0.7071f, 0.0f, 0.7071f),
+        XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
+        XMFLOAT4(0.0f, 0.7071f, 0.0f, -0.7071f), 
+        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)
+    };
+
+    m_myAnimation.m_samplers.push_back(sampler1);
+
+    AnimationSampler sampler2;
+    sampler2.interpolation = AnimationSampler::LINEAR;
+
+    float orbitRadius = 2.0f;
+    int numKeyframes = 36;
+    float animDuration = 4.0f;
+
+    for (int i = 0; i <= numKeyframes; ++i)
+    {
+        float t = (float)i / (float)numKeyframes;
+        float angle = t * XM_2PI;
+        float timeStamp = t * animDuration;
+
+        sampler2.timestamps.push_back(timeStamp);
+        sampler2.vec3_values.push_back(XMFLOAT3(
+            cos(angle) * orbitRadius,
+            0.0f,
+            sin(angle) * orbitRadius
+        ));
+    }
+
+    m_myAnimation.m_samplers.push_back(sampler2);
+
+    m_myAnimation.m_samplers.push_back(sampler2);
 
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
@@ -192,54 +240,75 @@ void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
 // Update function to update the scene's state
 void Scene::update(const float deltaTime)
 {
-    //------------- update part----------------
-
     static float animationTimer = 0;
     animationTimer += deltaTime;
 
-	AnimationSampler sampler = m_myAnimation.m_samplers[0];
+    AnimationSampler sampler1 = m_myAnimation.m_samplers[0];
+    AnimationSampler sampler1Rot = m_myAnimation.m_samplers[1];
 
-    // Hint - we need a next and a previous keyframe to interpolate between. 
-    int nextKeyframe = -1;
-    for (int i = 0; i < sampler.timestamps.size(); ++i)
+    int nextKeyframe1 = -1;
+    for (int i = 0; i < sampler1.timestamps.size(); ++i)
     {
-        if (sampler.timestamps[i] > animationTimer)
+        if (sampler1.timestamps[i] > animationTimer)
         {
-            nextKeyframe = i;
+            nextKeyframe1 = i;
             break;
         }
     }
 
-    // Handle edge cases 
-    // this is a 'fix' but really you'd want more complex logic here for animations with more than two keyframes. Also, what would you do if an animation was looping, or not a looping animation?
-    if (nextKeyframe == -1 || nextKeyframe == 0)
+    if (nextKeyframe1 == -1 || nextKeyframe1 == 0)
+        nextKeyframe1 = 1;
+
+    int prevKeyframe1 = nextKeyframe1 - 1;
+    float prevTime1 = sampler1.timestamps[prevKeyframe1];
+    float nextTime1 = sampler1.timestamps[nextKeyframe1];
+    float t1 = (animationTimer - prevTime1) / (nextTime1 - prevTime1);
+
+    DirectX::XMVECTOR prevPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalPos1 = DirectX::XMVectorLerp(prevPos1, nextPos1, t1);
+
+    DirectX::XMVECTOR prevRot1 = DirectX::XMLoadFloat4(&sampler1Rot.vec4_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextRot1 = DirectX::XMLoadFloat4(&sampler1Rot.vec4_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalRot1 = DirectX::XMQuaternionSlerp(prevRot1, nextRot1, t1);
+
+    DirectX::XMMATRIX object1Rotation = DirectX::XMMatrixRotationQuaternion(finalRot1);
+    DirectX::XMMATRIX object1Translation = DirectX::XMMatrixTranslationFromVector(finalPos1);
+    DirectX::XMMATRIX object1Transform = object1Rotation * object1Translation;
+
+    m_sceneobject.GetRootNode(0)->SetMatrix(object1Transform);
+
+    AnimationSampler sampler2 = m_myAnimation.m_samplers[2]; 
+
+    int nextKeyframe2 = -1;
+    for (int i = 0; i < sampler2.timestamps.size(); ++i)
     {
-        /* nextKeyframe = -1 Time is after the last keyframe */
-        /* nextKeyframe = 0 Time is before the last keyframe */
-        nextKeyframe = 1;
+        if (sampler2.timestamps[i] > animationTimer)
+        {
+            nextKeyframe2 = i;
+            break;
+        }
     }
 
-    // this code should be guarded with checks!
-    int prevKeyframe = nextKeyframe - 1;
-    float prevTime = sampler.timestamps[prevKeyframe];
-    float nextTime = sampler.timestamps[nextKeyframe];
+    if (nextKeyframe2 == -1 || nextKeyframe2 == 0)
+        nextKeyframe2 = 1;
 
-    // It would be sensible to do a sanity check here and see whether the prevTime and nextTime are sensible, and what you'd expect.
+    int prevKeyframe2 = nextKeyframe2 - 1;
+    float prevTime2 = sampler2.timestamps[prevKeyframe2];
+    float nextTime2 = sampler2.timestamps[nextKeyframe2];
+    float t2 = (animationTimer - prevTime2) / (nextTime2 - prevTime2);
 
-    // Calculate the progress between these two timestamps
-    float t = (animationTimer - prevTime) / (nextTime - prevTime); // e.g. (1.2 - 0.0) / (2.0 - 0.0) = 0.6
+    DirectX::XMVECTOR prevOffset = DirectX::XMLoadFloat3(&sampler2.vec3_values[prevKeyframe2]);
+    DirectX::XMVECTOR nextOffset = DirectX::XMLoadFloat3(&sampler2.vec3_values[nextKeyframe2]);
+    DirectX::XMVECTOR orbitOffset = DirectX::XMVectorLerp(prevOffset, nextOffset, t2);
 
-    // what does this achieve? What sort of animations would it be useful for?
-    if (animationTimer >= nextTime)
+    DirectX::XMVECTOR object2FinalPos = DirectX::XMVectorAdd(finalPos1, orbitOffset);
+
+    DirectX::XMMATRIX object2Translation = DirectX::XMMatrixTranslationFromVector(object2FinalPos);
+    m_sceneobject2.GetRootNode(0)->SetMatrix(object2Translation);
+
+    if (animationTimer >= sampler1.timestamps.back())
         animationTimer = 0;
-
-    DirectX::XMVECTOR prevValue = DirectX::XMLoadFloat3(&sampler.vec3_values[prevKeyframe]);
-    DirectX::XMVECTOR nextValue = DirectX::XMLoadFloat3(&sampler.vec3_values[nextKeyframe]);
-
-    DirectX::XMVECTOR finalValue = DirectX::XMVectorLerp(prevValue, nextValue, t);
-
-    DirectX::XMMATRIX translationMatrix2 = DirectX::XMMatrixTranslationFromVector(finalValue);
-    m_sceneobject2.GetRootNode(0)->SetMatrix(translationMatrix2);
 
 
 
