@@ -72,11 +72,14 @@ public: // properties
 
 	Microsoft::WRL::ComPtr <ID3D11VertexShader>		m_pVertexShader;
 	Microsoft::WRL::ComPtr <ID3D11PixelShader>		m_pPixelShader;
-	Microsoft::WRL::ComPtr <ID3D11PixelShader>		m_pPixelSolidShader;
 	Microsoft::WRL::ComPtr <ID3D11InputLayout>		m_pVertexLayout;
 
+	Microsoft::WRL::ComPtr <ID3D11VertexShader>		m_pAniVertexShader;
+	Microsoft::WRL::ComPtr <ID3D11PixelShader>		m_pAniPixelShader;
+
+
 	XMFLOAT4X4				m_matProjection;
-	//ConstantBuffer			m_ConstantBufferData;
+	ConstantBuffer			m_ConstantBufferData;
 	ConstantBufferSwitch	m_ConstantBufferDataSwitch;
 
 

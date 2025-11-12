@@ -169,16 +169,47 @@ LightingResult ComputeLighting(float4 pixelToLightVectorNormalised, float4 pixel
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-PS_INPUT VS( VS_INPUT input )
+PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
 	
-	output.Pos = mul(input.Pos, World);
+    float4 skinnedPos = float4(0, 0, 0, 0);
+    float3 skinnedNorm = float3(0, 0, 0);
+	
+    int index0 = (int) input.Joints.x;
+    float4x4 joint0Matrix = g_boneTransforms[index0];
+    float joint0Weight = input.Weights.x;
+    skinnedPos += mul(input.Pos, joint0Matrix) * joint0Weight;
+    skinnedNorm += mul(input.Norm, (float3x3) joint0Matrix) * joint0Weight;
+    
+    int index1 = (int) input.Joints.y;
+    float4x4 joint1Matrix = g_boneTransforms[index1];
+    float joint1Weight = input.Weights.y;
+    skinnedPos += mul(input.Pos, joint1Matrix) * joint1Weight;
+    skinnedNorm += mul(input.Norm, (float3x3) joint1Matrix) * joint1Weight;
+    
+    int index2 = (int) input.Joints.z;
+    float4x4 joint2Matrix = g_boneTransforms[index2];
+    float joint2Weight = input.Weights.z;
+    skinnedPos += mul(input.Pos, joint2Matrix) * joint2Weight;
+    skinnedNorm += mul(input.Norm, (float3x3) joint2Matrix) * joint2Weight;
+    
+    int index3 = (int) input.Joints.w;
+    float4x4 joint3Matrix = g_boneTransforms[index3];
+    float joint3Weight = input.Weights.w;
+    skinnedPos += mul(input.Pos, joint3Matrix) * joint3Weight;
+    skinnedNorm += mul(input.Norm, (float3x3) joint3Matrix) * joint3Weight;
+    
+    skinnedPos.w = 1.0f;
+    
+    skinnedNorm = normalize(skinnedNorm);
+	
+    output.Pos = mul(skinnedPos, World);
     output.worldPos = output.Pos;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
 
-    output.Norm = mul(input.Norm, (float3x3) World);
+    output.Norm = mul(skinnedNorm, (float3x3) World);
     output.Norm = normalize(output.Norm);
 
     output.Tex = input.Tex;

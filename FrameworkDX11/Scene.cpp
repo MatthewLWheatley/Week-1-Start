@@ -27,7 +27,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_animations.push_back(&m_myAnimation2);
     
     // Create a camera with initial position, target, and up vector
-    m_pCamera = new Camera(XMFLOAT3(0, 3, -10), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
+    m_pCamera = new Camera(XMFLOAT3(0, 0, -10), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
 
     // Create the constant buffer for transformation matrices (view, projection, etc.)
     D3D11_BUFFER_DESC bd = {};
@@ -36,6 +36,15 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
     hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBufferSwitch);
+    if (FAILED(hr))
+        return hr;  // If buffer creation fails, return the error
+
+    bd = {};
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBuffer);
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
 
@@ -108,6 +117,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
 
 void Scene::initAnimation1() 
 {
+    m_sceneobject.Destroy();
     for (SceneGraph* object : m_objects) 
     {
         if(object)object->Destroy();
@@ -256,59 +266,76 @@ void Scene::initAnimation2()
 
 void Scene::initAnimation3()
 {
+    m_anim3Initialized = true;
+    m_anim3Skeleton = Skeleton();
+    m_anim3SceneNodes.clear();
+    m_sceneobject.Destroy();
     for (SceneGraph* object : m_objects)
     {
         if (object)object->Destroy();
         object = nullptr;
     }
     m_objects = vector<SceneGraph*>(100);
-    if (m_animations[2]) 
-    {
-        m_animations[2]->m_channels.clear();
-        m_animations[2]->m_name.clear();
-        m_animations[2]->m_samplers.clear();
+
+    m_myAnimation3.m_channels.clear();
+    m_myAnimation3.m_name.clear();
+    m_myAnimation3.m_samplers.clear();
+
+    Skeleton anim3Skeleton;
+
+    XMFLOAT4X4 bodyTransform;
+    XMStoreFloat4x4(&bodyTransform, XMMatrixIdentity());
+    int bodyIndex = anim3Skeleton.AddJoint(-1, bodyTransform);
+
+    XMFLOAT4X4 headTransform;
+    XMStoreFloat4x4(&headTransform, XMMatrixTranslation(0.0f, 3.0f, 0.0f));
+    int headIndex = anim3Skeleton.AddJoint(bodyIndex, headTransform);
+
+    m_anim3Skeleton = anim3Skeleton;
+
+    for (int i = 0; i < m_anim3Skeleton.GetBoneCount(); ++i) {
+        m_sceneobject.CreateRootNode();
     }
-    SceneNode* bodyNode = m_sceneobject.CreateRootNode();
-    bodyNode->LoadSphere(m_ctx);
-    SceneNode* HeadNode = bodyNode->CreateChildNode();
-    HeadNode->LoadSphere(m_ctx);
+
     m_objects[0] = &m_sceneobject;
+
+    m_anim3SceneNodes.clear();
+    for (int i = 0; i < m_anim3Skeleton.GetBoneCount(); ++i) {
+        SceneNode* node = m_sceneobject.GetRootNode(i);
+        node->LoadSphere(m_ctx);
+        node->SetMatrix(XMMatrixTranslation(0.0f, 2.0f * i, 0.0f));
+        m_anim3SceneNodes.push_back(node);
+    }
 
     AnimationSampler sampler0;
     sampler0.interpolation = AnimationSampler::LINEAR;
-
-    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f};
-
+    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
     sampler0.vec3_values = {
-        XMFLOAT3(-2.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(2.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(-2.0f, 0.0f, 0.0f)
+        XMFLOAT3(-2.0f, 2.0f, 0.0f),
+        XMFLOAT3(0.0f, 2.0f, 0.0f),
+        XMFLOAT3(2.0f, 2.0f, 0.0f),
+        XMFLOAT3(0.0f, 2.0f, 0.0f),
+        XMFLOAT3(-2.0f, 2.0f, 0.0f)
     };
     m_myAnimation3.m_samplers.push_back(sampler0);
 
     AnimationSampler sampler1;
-    sampler1.interpolation = AnimationSampler::CUBICSPLINE;
-
+    sampler1.interpolation = AnimationSampler::LINEAR;
     sampler1.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-
-    sampler1.vec4_values =
-    {
-        XMFLOAT4(0.0f, 0.0f,-0.1305262f,  0.9914449f),
-        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
-        XMFLOAT4(0.0f, 0.0f, 0.1305262f,  0.9914449f),
-        XMFLOAT4(0.0f, 0.0f, 0.0f,  1.0f),
-        XMFLOAT4(0.0f, 0.0f,-0.1305262f, 0.9914449f),
+    sampler1.vec4_values = {
+        XMFLOAT4(0.0f, 0.0f, 1, 0),
+        XMFLOAT4(0.0f, 0.0f, 0, 1),
+        XMFLOAT4(0.0f, 0.0f, -1, 0),  
+        XMFLOAT4(0.0f, 0.0f, 0, 1),
+        XMFLOAT4(0.0f, 0.0f, 1, 0),
     };
     m_myAnimation3.m_samplers.push_back(sampler1);
 
-    AnimationChannel rootTran;
-    rootTran.jointIndex = 0;
-    rootTran.samplerIndex = 0;
-    rootTran.path = AnimationChannel::TRANSLATION;
-    m_myAnimation3.m_channels.push_back(rootTran);
-
+    AnimationChannel rootTrans;
+    rootTrans.jointIndex = 0;
+    rootTrans.samplerIndex = 0;
+    rootTrans.path = AnimationChannel::TRANSLATION;
+    m_myAnimation3.m_channels.push_back(rootTrans);
 
     AnimationChannel rootRot;
     rootRot.jointIndex = 0;
@@ -318,38 +345,33 @@ void Scene::initAnimation3()
 
     AnimationSampler sampler2;
     sampler2.interpolation = AnimationSampler::LINEAR;
-
     sampler2.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-
     sampler2.vec3_values = {
-        XMFLOAT3(-2.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(2.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(-2.0f, 0.0f, 0.0f)
+        XMFLOAT3(0.0f, 4.0f, 0.0f),
+        XMFLOAT3(0.0f, 2.0f, 0.0f),
+        XMFLOAT3(0.0f, 4.0f, 0.0f),
+        XMFLOAT3(0.0f, 2.0f, 0.0f),
+        XMFLOAT3(0.0f, 4.0f, 0.0f)
     };
     m_myAnimation3.m_samplers.push_back(sampler2);
 
     AnimationSampler sampler3;
-    sampler3.interpolation = AnimationSampler::CUBICSPLINE;
-
+    sampler3.interpolation = AnimationSampler::LINEAR;
     sampler3.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-
-    sampler3.vec4_values =
-    {
-        XMFLOAT4(0.0f, 0.0f, 0.1305262f,  0.9914449f),
-        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
-        XMFLOAT4(0.0f, 0.0f, -0.1305262f,  0.9914449f),
-        XMFLOAT4(0.0f, 0.0f, 0.0f,  1.0f),
-        XMFLOAT4(0.0f, 0.0f, 0.1305262f, 0.9914449f),
+    sampler3.vec4_values = {
+        XMFLOAT4(0.0f, 0.0f, 0, 1),
+        XMFLOAT4(0.0f, 0.0f, -1, 0),
+        XMFLOAT4(0.0f, 0.0f, 0, -1),
+        XMFLOAT4(0.0f, 0.0f, -1, 0),
+        XMFLOAT4(0.0f, 0.0f, 0, 1),
     };
     m_myAnimation3.m_samplers.push_back(sampler3);
 
-    AnimationChannel headTran;
-    headTran.jointIndex = 1;
-    headTran.samplerIndex = 2;
-    headTran.path = AnimationChannel::TRANSLATION;
-    m_myAnimation3.m_channels.push_back(headTran);
+    AnimationChannel headTrans;
+    headTrans.jointIndex = 1;
+    headTrans.samplerIndex = 2;
+    headTrans.path = AnimationChannel::TRANSLATION;
+    m_myAnimation3.m_channels.push_back(headTrans);
 
     AnimationChannel headRot;
     headRot.jointIndex = 1;
@@ -359,10 +381,119 @@ void Scene::initAnimation3()
 
     m_animations[2] = &m_myAnimation3;
     m_animationTimers[2] = 0.0f;
+    initAnimation3_5();
+}
+void Scene::initAnimation3_5()
+{
+    m_anim3_5Skeleton = Skeleton();
+    m_anim3_5SceneNodes.clear();
+    m_sceneobject2.Destroy();
+
+    m_myAnimation3_5.m_channels.clear();
+    m_myAnimation3_5.m_name.clear();
+    m_myAnimation3_5.m_samplers.clear();
+
+    XMFLOAT4X4 bodyTransform;
+    XMStoreFloat4x4(&bodyTransform, XMMatrixIdentity());
+    int bodyIndex = m_anim3_5Skeleton.AddJoint(-1, bodyTransform);
+
+    XMFLOAT4X4 headTransform;
+    XMStoreFloat4x4(&headTransform, XMMatrixTranslation(0.0f, 3.0f, 0.0f));
+    int headIndex = m_anim3_5Skeleton.AddJoint(bodyIndex, headTransform);
+
+    for (int i = 0; i < m_anim3_5Skeleton.GetBoneCount(); ++i) {
+        m_sceneobject2.CreateRootNode();
+    }
+
+    m_objects[1] = &m_sceneobject2;
+
+    m_anim3_5SceneNodes.clear();
+    for (int i = 0; i < m_anim3_5Skeleton.GetBoneCount(); ++i) {
+        SceneNode* node = m_sceneobject2.GetRootNode(i);
+        node->LoadSphere(m_ctx);
+        m_anim3_5SceneNodes.push_back(node);
+    }
+
+    AnimationSampler sampler0;
+    sampler0.interpolation = AnimationSampler::LINEAR;
+    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+    sampler0.vec3_values = {
+        XMFLOAT3(2.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(-2.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(2.0f, 0.0f, 0.0f)
+    };
+    m_myAnimation3_5.m_samplers.push_back(sampler0);
+
+    AnimationSampler sampler1;
+    sampler1.interpolation = AnimationSampler::LINEAR;
+    sampler1.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+    sampler1.vec4_values = {
+        XMFLOAT4(0.0f, 0.0f, 0, 1),
+        XMFLOAT4(0.0f, 0.0f, -1, 0),
+        XMFLOAT4(0.0f, 0.0f, 0, -1),
+        XMFLOAT4(0.0f, 0.0f, -1, 0),
+        XMFLOAT4(0.0f, 0.0f, 0, 1),
+    };
+    m_myAnimation3_5.m_samplers.push_back(sampler1);
+
+    AnimationChannel rootTrans;
+    rootTrans.jointIndex = 0;
+    rootTrans.samplerIndex = 0;
+    rootTrans.path = AnimationChannel::TRANSLATION;
+    m_myAnimation3_5.m_channels.push_back(rootTrans);
+
+    AnimationChannel rootRot;
+    rootRot.jointIndex = 0;
+    rootRot.samplerIndex = 1;
+    rootRot.path = AnimationChannel::ROTATION;
+    m_myAnimation3_5.m_channels.push_back(rootRot);
+
+    AnimationSampler sampler2;
+    sampler2.interpolation = AnimationSampler::LINEAR;
+    sampler2.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+    sampler2.vec3_values = {
+        XMFLOAT3(0.0f, 4.0f, 0.0f),
+        XMFLOAT3(0.0f, 2.0f, 0.0f),
+        XMFLOAT3(0.0f, 4.0f, 0.0f),
+        XMFLOAT3(0.0f, 2.0f, 0.0f),
+        XMFLOAT3(0.0f, 4.0f, 0.0f)
+    };
+    m_myAnimation3_5.m_samplers.push_back(sampler2);
+
+    AnimationSampler sampler3;
+    sampler3.interpolation = AnimationSampler::LINEAR;
+    sampler3.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+    sampler3.vec4_values = {
+        XMFLOAT4(0.0f, 0.0f, 0, -1),
+        XMFLOAT4(0.0f, 0.0f, 1, 0),
+        XMFLOAT4(0.0f, 0.0f, 0, 1),
+        XMFLOAT4(0.0f, 0.0f, 1, 0),
+        XMFLOAT4(0.0f, 0.0f, 0, -1),
+    };
+    m_myAnimation3_5.m_samplers.push_back(sampler3);
+
+    AnimationChannel headTrans;
+    headTrans.jointIndex = 1;
+    headTrans.samplerIndex = 2;
+    headTrans.path = AnimationChannel::TRANSLATION;
+    m_myAnimation3_5.m_channels.push_back(headTrans);
+
+    AnimationChannel headRot;
+    headRot.jointIndex = 1;
+    headRot.samplerIndex = 3;
+    headRot.path = AnimationChannel::ROTATION;
+    m_myAnimation3_5.m_channels.push_back(headRot);
 }
 
 void Scene::initAnimation4() 
 {
+    m_sceneobject.Destroy();
+    m_armSegmentNodes.clear();
+    m_robotArmSkeleton = Skeleton();
+    m_robotArmAnimations.clear();
+    doOnce = true;
     for (SceneGraph* object : m_objects)
     {
         if (object)object->Destroy();
@@ -423,6 +554,29 @@ void Scene::initAnimation4()
         CreateWaveAnimationSampler(i, &m_myAnimation4);
     }
     m_robotArmAnimations.push_back(m_myAnimation4);
+}
+
+void Scene::initAnimation5() 
+{
+    m_sceneobject.Destroy();
+    for (SceneGraph* object : m_objects)
+    {
+        if (object)object->Destroy();
+        object = nullptr;
+    }
+    m_objects = vector<SceneGraph*>(100);
+    if (m_animations[0])
+    {
+        m_animations[0]->m_channels.clear();
+        m_animations[0]->m_name.clear();
+        m_animations[0]->m_samplers.clear();
+    }
+
+    m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\simplerig.gltf");
+
+    m_objects[0] = &m_sceneobject;
+
+
 }
 
 void Scene::CreateWaveAnimationSampler(int nodeIndex, Animation* anim)
@@ -608,6 +762,12 @@ void Scene::animation1(const float deltaTime)
         m_animationTimers[0] = sampler1.timestamps.back();
 
 
+    m_sceneobject.AnimateFrame(m_ctx);
+    m_sceneobject.RenderFrame(m_ctx, deltaTime);
+
+
+    m_sceneobject2.AnimateFrame(m_ctx);
+    m_sceneobject2.RenderFrame(m_ctx, deltaTime);
 }
 
 void Scene::animation2(const float deltaTime)
@@ -676,47 +836,52 @@ void Scene::animation2(const float deltaTime)
         m_animationTimers[1] = 0;
     if (m_animationTimers[1] < -0.01)
         m_animationTimers[1] = sampler0.timestamps.back();
+
+
+    m_sceneobject.AnimateFrame(m_ctx);
+    m_sceneobject.RenderFrame(m_ctx, deltaTime);
 }
 
-void Scene::animation3(const float deltaTime) 
+void Scene::animation3(const float deltaTime)
 {
-    float* timer = &m_animationTimers[2];
-    if (m_animationPlaying) *timer += deltaTime;
-
-
-
-    AnimationSampler sampler0 = m_animations[2]->m_samplers[0];
-    AnimationSampler sampler0Rot = m_animations[2]->m_samplers[0];
-    int nextKeyframe1 = -1;
-    for (int i = 0; i < sampler0.timestamps.size(); ++i)
+    if (m_anim3Initialized)
     {
-        if (sampler0.timestamps[i] > m_animationTimers[1])
-        {
-            nextKeyframe1 = i;
-            break;
-        }
+        m_anim3Initialized = false;
+        m_anim3Skeleton.PlayAnimation(&m_myAnimation3);
+        m_anim3_5Skeleton.PlayAnimation(&m_myAnimation3_5);
     }
 
-    if (nextKeyframe1 == -1 || nextKeyframe1 == 0)
-        nextKeyframe1 = 1;
+    if (m_animationPlaying)
+    {
+        m_anim3Skeleton.Update(deltaTime);
+        m_anim3_5Skeleton.Update(deltaTime);
+    }
+
+    for (int i = 0; i < m_anim3Skeleton.GetBoneCount(); ++i)
+    {
+        Joint* joint = m_anim3Skeleton.GetJoint(i);
+        XMMATRIX finalWorldTransform = XMLoadFloat4x4(&joint->finalTransform);
+        m_anim3SceneNodes[i]->SetMatrix(finalWorldTransform);
+    }
+
+    for (int i = 0; i < m_anim3_5Skeleton.GetBoneCount(); ++i)
+    {
+        Joint* joint = m_anim3_5Skeleton.GetJoint(i);
+        XMMATRIX finalWorldTransform = XMLoadFloat4x4(&joint->finalTransform);
+        m_anim3_5SceneNodes[i]->SetMatrix(finalWorldTransform);
+    }
 
 
-    int prevKeyframe1 = nextKeyframe1 - 1;
-    float prevTime1 = sampler0.timestamps[prevKeyframe1];
-    float nextTime1 = sampler0.timestamps[nextKeyframe1];
-    float t1 = (m_animationTimers[1] - prevTime1) / (nextTime1 - prevTime1);
+    m_sceneobject.AnimateFrame(m_ctx);
+    m_sceneobject.RenderFrame(m_ctx, deltaTime);
 
 
-
-    if (m_animationTimers[2] >= sampler0.timestamps.back())
-        m_animationTimers[2] = 0;
-    if (m_animationTimers[2] < -0.01)
-        m_animationTimers[2] = sampler0.timestamps.back();
+    m_sceneobject2.AnimateFrame(m_ctx);
+    m_sceneobject2.RenderFrame(m_ctx, deltaTime);
 }
 
 void Scene::animation4(const float deltaTime) 
 {
-    static bool doOnce = true;
 
     if (doOnce)
     {
@@ -725,12 +890,8 @@ void Scene::animation4(const float deltaTime)
         m_robotArmSkeleton.PlayAnimation(&m_robotArmAnimations[0]);
     }
 
-    // --- 2. Update the Skeleton's Pose ---
-    // This function now reads from the Animation object and updates all joint poses.
     m_robotArmSkeleton.Update(deltaTime);
 
-    // --- 3. Sync Visible Nodes with Skeleton (This logic is crucial) ---
-    // This copies the final world matrix of each joint to its visible sphere.
     for (int i = 0; i < m_robotArmSkeleton.GetBoneCount(); ++i)
     {
         Joint* joint = m_robotArmSkeleton.GetJoint(i);
@@ -739,12 +900,32 @@ void Scene::animation4(const float deltaTime)
         m_armSegmentNodes[i]->SetMatrix(finalWorldTransform);
     }
 
-    // ... (rest of the render calls)
-    // Note that m_armSegmentNodes is linked to m_sceneobject so you just need to call the m_sceneobject AnimateFrame and RenderFrame methods as you may already be doing
 
     m_sceneobject.AnimateFrame(m_ctx);
     m_sceneobject.RenderFrame(m_ctx, deltaTime);
+}
 
+void Scene::animation5(const float deltaTime) 
+{
+    ConstantBuffer cb;
+    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());  // Identity world matrix
+    cb.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
+    cb.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
+    cb.vOutputColor = XMFLOAT4(0, 0, 1, 1);  // Placeholder for output color
+
+
+    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+    m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
+
+    m_pImmediateContext->UpdateSubresource(m_pLightConstantBuffer.Get(), 0, nullptr, &m_lightProperties, 0, 0);
+    ID3D11Buffer* buf = m_pLightConstantBuffer.Get();
+    m_pImmediateContext->PSSetConstantBuffers(1, 1, &buf);
+    m_pImmediateContext->PSSetShader(m_pRenderer->m_pAniPixelShader.Get(), nullptr, 0);
+
+
+    m_sceneobject.AnimateFrame(m_ctx);
+    m_sceneobject.RenderFrame(m_ctx, deltaTime);
 }
 
 DirectX::XMFLOAT3 Scene::BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation)
@@ -814,6 +995,9 @@ void Scene::update(const float deltaTime)
     case 4:
         animation4(deltaTime);
         break;
+    case 5:
+        animation5(deltaTime);
+        break;
     }
 
 
@@ -854,17 +1038,5 @@ void Scene::update(const float deltaTime)
     m_pImmediateContext->PSSetConstantBuffers(1, 1, &buf);
 
 
-    m_sceneobject.AnimateFrame(m_ctx);
-    m_sceneobject.RenderFrame(m_ctx, deltaTime);
 
-	m_sceneobject2.AnimateFrame(m_ctx);
-	m_sceneobject2.RenderFrame(m_ctx, deltaTime);
-
-	ConstantBufferlight cb2;
-    cb2.vOutputColor2 = XMFLOAT4(0, 0, 1, 1);
-    m_pImmediateContext->UpdateSubresource(m_pConstantBufferlight.Get(), 0, nullptr, &cb2, 0, 0);
-
-    m_pImmediateContext->PSSetShader(m_pRenderer->m_pPixelSolidShader.Get(),nullptr,0);
-    ID3D11Buffer* cbSwitch = m_pConstantBufferlight.Get();
-    m_pImmediateContext->PSSetConstantBuffers(2, 1, &cbSwitch);
 }

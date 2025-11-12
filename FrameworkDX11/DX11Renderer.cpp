@@ -30,12 +30,8 @@ HRESULT DX11Renderer::init(HWND hwnd)
     HRESULT hr;
     // Compile the vertex shader
     ID3DBlob* pVSBlob = nullptr;
-    if constexpr (PBR_MODE) 
-        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "VS", "vs_4_0", &pVSBlob);
-    else
-        hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "VS", "vs_4_0", &pVSBlob);
+    hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "VS", "vs_4_0", &pVSBlob);
     
-
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -77,11 +73,7 @@ HRESULT DX11Renderer::init(HWND hwnd)
     // Compile the pixel shader
     ID3DBlob* pPSBlob = nullptr;
 
-    if constexpr (PBR_MODE)
-        hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PS_PBR", "ps_4_0", &pPSBlob);
-    else
-        hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "PS", "ps_4_0", &pPSBlob);
-
+    hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PS_PBR", "ps_4_0", &pPSBlob);
 
     if (FAILED(hr))
     {
@@ -96,11 +88,11 @@ HRESULT DX11Renderer::init(HWND hwnd)
     if (FAILED(hr))
         return hr;
 
-    // Compile the pixel shader
-    pPSBlob = nullptr;
-
-    hr = DX11Renderer::compileShaderFromFile(L"shader_me.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
+    // ----- animation shader -----
     
+    pVSBlob = nullptr;
+    hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "VS", "vs_4_0", &pVSBlob);
+
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -108,11 +100,33 @@ HRESULT DX11Renderer::init(HWND hwnd)
         return hr;
     }
 
+    // Create the vertex shader
+    hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &m_pAniVertexShader);
+    if (FAILED(hr))
+    {
+        pVSBlob->Release();
+        return hr;
+    }
+
+    // Compile the pixel shader
+    pPSBlob = nullptr;
+
+    hr = DX11Renderer::compileShaderFromFile(L"skinned_shader.hlsl", "PS", "ps_4_0", &pPSBlob);
+
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+        return hr;
+    }
+
+    // Creat
     // Create the pixel shader
-    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelSolidShader);
+    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pAniPixelShader);
     pPSBlob->Release();
     if (FAILED(hr))
         return hr;
+
 
     return hr;
 }
@@ -574,7 +588,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
     ImGui::SliderFloat("type", &m_pScene->type, 0, 2, "%1.0f");
 
 
-    ImGui::Begin("Window A");
+    /*ImGui::Begin("Window A");
     for (int x = 0; x < m_pScene->m_objects.size(); x++) 
     {
 		if (!m_pScene->m_objects[x]) continue;
@@ -645,7 +659,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
             m_pScene->m_objects[x]->mRootNodes[0].SetMatrix(out);
 		}
     }
-    ImGui::End();
+    ImGui::End();*/
 
     ImGui::Begin("Window B");
     if (ImGui::Button("add light")) 
@@ -687,7 +701,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
 
 
 
-    if (ImGui::CollapsingHeader("Primatives"))
+    if (ImGui::CollapsingHeader("Animations"))
     {
         Animation* selectedAnim = nullptr;
         switch (m_pScene->m_animationSelected)
@@ -783,6 +797,11 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
         {
             m_pScene->initAnimation4();
             m_pScene->m_animationSelected = 4;
+        }
+        if (ImGui::Button("Animations 5")) 
+        {
+            m_pScene->initAnimation5();
+            m_pScene->m_animationSelected = 5;
         }
     }
 

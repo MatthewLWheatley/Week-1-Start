@@ -721,14 +721,20 @@ void SceneGraph::RenderFrame(IRenderingContext& ctx, const float deltaTime)
         return;
 
     ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
-    data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
-    data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
-	data->frank = XMFLOAT4(ctx.getDXRenderer()->m_pScene->albedo.x, ctx.getDXRenderer()->m_pScene->albedo.y, ctx.getDXRenderer()->m_pScene->albedo.z, 1.0f);
-    data->metal = ctx.getDXRenderer()->m_pScene->metal;
-    data->rough = ctx.getDXRenderer()->m_pScene->rough;
-    data->type = ctx.getDXRenderer()->m_pScene->type;
-    data->textureSelect = ctx.getDXRenderer()->m_pScene->textureSelect;
-
+    if (data) {
+        data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
+        data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
+        data->frank = XMFLOAT4(ctx.getDXRenderer()->m_pScene->albedo.x, ctx.getDXRenderer()->m_pScene->albedo.y, ctx.getDXRenderer()->m_pScene->albedo.z, 1.0f);
+        data->metal = ctx.getDXRenderer()->m_pScene->metal;
+        data->rough = ctx.getDXRenderer()->m_pScene->rough;
+        data->type = ctx.getDXRenderer()->m_pScene->type;
+        data->textureSelect = ctx.getDXRenderer()->m_pScene->textureSelect;
+    }
+    else {
+        ConstantBuffer* data = &ctx.getDXRenderer()->m_ConstantBufferData;
+        data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
+        data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
+    }
     // Scene geometry
     for (auto& node : mRootNodes)
         RenderNode(ctx, node, XMMatrixIdentity(), deltaTime);
@@ -761,12 +767,12 @@ void SceneGraph::RenderNode(IRenderingContext &ctx,
         
         // store world and the view / projection in a constant buffer for the vertex shader to use
         data->mWorld = DirectX::XMMatrixTranspose(world);
-        ctx.GetImmediateContext()->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.Get(), 0, nullptr, data, 0, 0);
+        ctx.GetImmediateContext()->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBuffer.Get(), 0, nullptr, data, 0, 0);
 
         // Render a cube
         ctx.GetImmediateContext()->VSSetShader(ctx.getDXRenderer()->m_pVertexShader.Get(), nullptr, 0);
-        ctx.GetImmediateContext()->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
-        ctx.GetImmediateContext()->PSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
+        ctx.GetImmediateContext()->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBuffer.GetAddressOf());
+        ctx.GetImmediateContext()->PSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBuffer.GetAddressOf());
 
         primitive.DrawGeometry(ctx, ctx.getDXRenderer()->m_pVertexLayout.Get());
     }

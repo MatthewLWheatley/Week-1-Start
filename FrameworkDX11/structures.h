@@ -10,15 +10,15 @@ using namespace DirectX;
 //--------------------------------------------------------------------------------------
 
 
-//struct ConstantBuffer
-//{
-//	XMMATRIX mWorld;
-//	XMMATRIX mView;
-//	XMMATRIX mProjection;
-//	XMFLOAT4 vOutputColor;
-//	XMMATRIX boneTransforms[max_bones];
-//	unsigned int bone_count;
-//};
+struct ConstantBuffer
+{
+	XMMATRIX mWorld;
+	XMMATRIX mView;
+	XMMATRIX mProjection;
+	XMFLOAT4 vOutputColor;
+	XMMATRIX boneTransforms[max_bones];
+	unsigned int bone_count;
+};
 
 struct ConstantBufferSwitch
 {
@@ -31,6 +31,8 @@ struct ConstantBufferSwitch
 	float rough;
 	float type;
 	float textureSelect;
+	XMMATRIX boneTransforms[max_bones];
+	unsigned int bone_count;
 };
 
 struct ConstantBufferlight

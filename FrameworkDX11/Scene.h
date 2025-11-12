@@ -62,13 +62,15 @@ public:
 	void initAnimation1();
 	void initAnimation2();
 	void initAnimation3();
+	void initAnimation3_5();
 	void initAnimation4();
+	void initAnimation5();
 
 	void CreateWaveAnimationSampler(int nodeIndex, Animation* anim);
 
 	Skeleton m_robotArmSkeleton;
-	std::vector<SceneNode*> m_armSegmentNodes; // For the visible spheres
-	std::vector<Animation> m_robotArmAnimations; // To store our created clips
+	std::vector<SceneNode*> m_armSegmentNodes;
+	std::vector<Animation> m_robotArmAnimations;
 
 
 private:
@@ -80,6 +82,7 @@ public:
 	Microsoft::WRL::ComPtr <ID3D11DeviceContext>	m_pImmediateContext;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBufferlight;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBufferSwitch;
+	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pConstantBuffer;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pLightConstantBuffer;
 	Microsoft::WRL::ComPtr <ID3D11Buffer>			m_pCustomConstantBuffer;
 
@@ -95,6 +98,7 @@ public:
 	Animation m_myAnimation1;
 	Animation m_myAnimation2;
 	Animation m_myAnimation3;
+	Animation m_myAnimation3_5;
 	Animation m_myAnimation4;
 	vector<Animation*> m_animations = vector<Animation*>(100);
 	vector<float> m_animationTimers = vector<float>(100);
@@ -102,12 +106,18 @@ public:
 	void animation2(const float deltaTime);
 	void animation3(const float deltaTime);
 	void animation4(const float deltaTime);
+	void animation5(const float deltaTime);
 	DirectX::XMFLOAT3 BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation);
 	DirectX::XMFLOAT4 BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& axis, float angleRadians);
 	DirectX::XMFLOAT3 BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animScale);
 	int m_animationSelected = 0;
 	bool m_animationPlaying = false;
-
+	bool doOnce = true;
+	Skeleton m_anim3Skeleton;
+	std::vector<SceneNode*> m_anim3SceneNodes;
+	Skeleton m_anim3_5Skeleton;
+	std::vector<SceneNode*> m_anim3_5SceneNodes;
+	bool m_anim3Initialized = true;
 
 private:
 	ID3D11ShaderResourceView* m_pTextureDiffuse;
