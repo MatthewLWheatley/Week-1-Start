@@ -27,7 +27,7 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_animations.push_back(&m_myAnimation2);
     
     // Create a camera with initial position, target, and up vector
-    m_pCamera = new Camera(XMFLOAT3(0, 0, -6), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
+    m_pCamera = new Camera(XMFLOAT3(0, 3, -10), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
 
     // Create the constant buffer for transformation matrices (view, projection, etc.)
     D3D11_BUFFER_DESC bd = {};
@@ -108,11 +108,18 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
 
 void Scene::initAnimation1() 
 {
-    for (auto& object : m_objects) 
+    for (SceneGraph* object : m_objects) 
     {
+        if(object)object->Destroy();
 		object = nullptr;
     }
 	m_objects = vector<SceneGraph*>(100);
+    if (m_animations[0])
+    {
+        m_animations[0]->m_channels.clear();
+        m_animations[0]->m_name.clear();
+        m_animations[0]->m_samplers.clear();
+    }
     bool ok = m_sceneobject.LoadGLTF(m_ctx, L"Resources\\box.gltf");
     bool ok2 = m_sceneobject2.LoadGLTF(m_ctx, L"Resources\\sphere.gltf");
     //bool ok3 = m_sceneobject3.LoadGLTF(m_ctx, L"Resources\\box.gltf");
@@ -177,48 +184,296 @@ void Scene::initAnimation1()
     m_myAnimation1.m_samplers.push_back(sampler2);
 
     m_animations[0] = &m_myAnimation1;
-    m_animationTimers.push_back(0.0f);
+    m_animationTimers[0] = 0.0f;
 
 }
 
 void Scene::initAnimation2()
 {
-    for (auto& object : m_objects)
+    for (SceneGraph* object : m_objects)
     {
+        if (object)object->Destroy();
         object = nullptr;
     }
     m_objects = vector<SceneGraph*>(100);
-
+    if (m_animations[1]) 
+    {
+        m_animations[1]->m_channels.clear();
+        m_animations[1]->m_name.clear();
+        m_animations[1]->m_samplers.clear();
+    }
     SceneNode* bodyNode = m_sceneobject.CreateRootNode();
     bodyNode->LoadSphere(m_ctx);
-    bodyNode->AddTranslation({ 0.0, 0, 2.0 });
+    bodyNode->AddTranslation({ 0.0, 0.0, 0.0 });
+    bodyNode->AddScale(-.75f);
     SceneNode* headNode = bodyNode->CreateChildNode();
     headNode->LoadSphere(m_ctx);
+    headNode->AddTranslation({ 0.0,3.0,0.0 });
+    SceneNode* twoNode = headNode->CreateChildNode();
+    twoNode->LoadSphere(m_ctx);
+    twoNode->AddTranslation({ 0.0,3.0,0.0 });
+    SceneNode* threeNode = twoNode->CreateChildNode();
+    threeNode->LoadSphere(m_ctx);
+    threeNode->AddTranslation({ 0.0,3.0,0.0 });
 
-    AnimationSampler sampler3;
-    sampler3.interpolation = AnimationSampler::LINEAR;
 
     m_objects[0] = &m_sceneobject;
 
-    sampler3.timestamps = { 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f };
+    AnimationSampler sampler0;
+    sampler0.interpolation = AnimationSampler::LINEAR;
 
-    sampler3.vec3_values = {
+    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f};
+
+    sampler0.vec3_values = {
+        XMFLOAT3(-2.0f, 0.0f, 0.0f),
         XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 1.0f, 0.0f),
+        XMFLOAT3(2.0f, 0.0f, 0.0f),
         XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(1.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, -1.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f),
-        XMFLOAT3(-1.0f, 0.0f, 0.0f),
-        XMFLOAT3(0.0f, 0.0f, 0.0f)
+        XMFLOAT3(-2.0f, 0.0f, 0.0f)
     };
-    m_myAnimation2.m_samplers.push_back(sampler3);
+    m_myAnimation2.m_samplers.push_back(sampler0);
+
+    AnimationSampler sampler1;
+    sampler1.interpolation = AnimationSampler::LINEAR;
+
+    sampler1.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler1.vec4_values =
+    {
+        XMFLOAT4(0.0f, 0.0f,-0.1305262f,  0.9914449f),
+        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
+        XMFLOAT4(0.0f, 0.0f, 0.1305262f,  0.9914449f),
+        XMFLOAT4(0.0f, 0.0f, 0.0f,  1.0f),
+        XMFLOAT4(0.0f, 0.0f,-0.1305262f, 0.9914449f),
+    };
+    m_myAnimation2.m_samplers.push_back(sampler1);
+
 
 
     m_animations[1] = &m_myAnimation2;
-    m_animationTimers.push_back(0.0f);
+    m_animationTimers[1] = 0.0f;
 }
+
+void Scene::initAnimation3()
+{
+    for (SceneGraph* object : m_objects)
+    {
+        if (object)object->Destroy();
+        object = nullptr;
+    }
+    m_objects = vector<SceneGraph*>(100);
+    if (m_animations[2]) 
+    {
+        m_animations[2]->m_channels.clear();
+        m_animations[2]->m_name.clear();
+        m_animations[2]->m_samplers.clear();
+    }
+    SceneNode* bodyNode = m_sceneobject.CreateRootNode();
+    bodyNode->LoadSphere(m_ctx);
+    SceneNode* HeadNode = bodyNode->CreateChildNode();
+    HeadNode->LoadSphere(m_ctx);
+    m_objects[0] = &m_sceneobject;
+
+    AnimationSampler sampler0;
+    sampler0.interpolation = AnimationSampler::LINEAR;
+
+    sampler0.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f};
+
+    sampler0.vec3_values = {
+        XMFLOAT3(-2.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(2.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(-2.0f, 0.0f, 0.0f)
+    };
+    m_myAnimation3.m_samplers.push_back(sampler0);
+
+    AnimationSampler sampler1;
+    sampler1.interpolation = AnimationSampler::CUBICSPLINE;
+
+    sampler1.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler1.vec4_values =
+    {
+        XMFLOAT4(0.0f, 0.0f,-0.1305262f,  0.9914449f),
+        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
+        XMFLOAT4(0.0f, 0.0f, 0.1305262f,  0.9914449f),
+        XMFLOAT4(0.0f, 0.0f, 0.0f,  1.0f),
+        XMFLOAT4(0.0f, 0.0f,-0.1305262f, 0.9914449f),
+    };
+    m_myAnimation3.m_samplers.push_back(sampler1);
+
+    AnimationChannel rootTran;
+    rootTran.jointIndex = 0;
+    rootTran.samplerIndex = 0;
+    rootTran.path = AnimationChannel::TRANSLATION;
+    m_myAnimation3.m_channels.push_back(rootTran);
+
+
+    AnimationChannel rootRot;
+    rootRot.jointIndex = 0;
+    rootRot.samplerIndex = 1;
+    rootRot.path = AnimationChannel::ROTATION;
+    m_myAnimation3.m_channels.push_back(rootRot);
+
+    AnimationSampler sampler2;
+    sampler2.interpolation = AnimationSampler::LINEAR;
+
+    sampler2.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler2.vec3_values = {
+        XMFLOAT3(-2.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(2.0f, 0.0f, 0.0f),
+        XMFLOAT3(0.0f, 0.0f, 0.0f),
+        XMFLOAT3(-2.0f, 0.0f, 0.0f)
+    };
+    m_myAnimation3.m_samplers.push_back(sampler2);
+
+    AnimationSampler sampler3;
+    sampler3.interpolation = AnimationSampler::CUBICSPLINE;
+
+    sampler3.timestamps = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+
+    sampler3.vec4_values =
+    {
+        XMFLOAT4(0.0f, 0.0f, 0.1305262f,  0.9914449f),
+        XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f),
+        XMFLOAT4(0.0f, 0.0f, -0.1305262f,  0.9914449f),
+        XMFLOAT4(0.0f, 0.0f, 0.0f,  1.0f),
+        XMFLOAT4(0.0f, 0.0f, 0.1305262f, 0.9914449f),
+    };
+    m_myAnimation3.m_samplers.push_back(sampler3);
+
+    AnimationChannel headTran;
+    headTran.jointIndex = 1;
+    headTran.samplerIndex = 2;
+    headTran.path = AnimationChannel::TRANSLATION;
+    m_myAnimation3.m_channels.push_back(headTran);
+
+    AnimationChannel headRot;
+    headRot.jointIndex = 1;
+    headRot.samplerIndex = 3;
+    headRot.path = AnimationChannel::ROTATION;
+    m_myAnimation3.m_channels.push_back(headRot);
+
+    m_animations[2] = &m_myAnimation3;
+    m_animationTimers[2] = 0.0f;
+}
+
+void Scene::initAnimation4() 
+{
+    for (SceneGraph* object : m_objects)
+    {
+        if (object)object->Destroy();
+        object = nullptr;
+    }
+    m_objects = vector<SceneGraph*>(100);
+    if (m_animations[3])
+    {
+        m_animations[3]->m_channels.clear();
+        m_animations[3]->m_name.clear();
+        m_animations[3]->m_samplers.clear();
+    }
+    const float segmentLength = 2.0f;
+
+    DirectX::XMFLOAT4X4 shoulderTransform;
+
+    DirectX::XMStoreFloat4x4(&shoulderTransform, DirectX::XMMatrixIdentity());
+    int shoulderIndex = m_robotArmSkeleton.AddJoint(-1, shoulderTransform);
+
+    // We will scale the elbow and hand nodes in turn
+    DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(0.75, 0.75, 0.75);
+
+    // The elbow is a child of the shoulder, translated down.
+    DirectX::XMFLOAT4X4 elbowTransform;
+    DirectX::XMStoreFloat4x4(&elbowTransform, scale * DirectX::XMMatrixTranslation(0.0f, segmentLength, 0.0f));
+    int elbowIndex = m_robotArmSkeleton.AddJoint(shoulderIndex, elbowTransform);
+
+    // The hand is a child of the elbow, also translated down.
+    DirectX::XMFLOAT4X4 handTransform;
+    DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(0.0f, segmentLength, 0.0f);
+
+    DirectX::XMStoreFloat4x4(&handTransform, scale * translation);
+    int handIndex = m_robotArmSkeleton.AddJoint(elbowIndex, handTransform);
+
+    // this must be done first as the root nodes might change as the vector is resized. 
+    for (int i = 0; i < m_robotArmSkeleton.GetBoneCount(); ++i) {
+        m_sceneobject.CreateRootNode();
+    }
+    m_objects[0] = &m_sceneobject;
+
+    // --- 2. Create the Visible Geometry for Each Joint ---
+    for (int i = 0; i < m_robotArmSkeleton.GetBoneCount(); ++i) {
+        SceneNode* segmentNode = m_sceneobject.GetRootNode(i);
+
+        segmentNode->LoadSphere(m_ctx);
+        //segmentNode->AddTranslation({ i * 2.0f, 0, 0 });
+
+        m_armSegmentNodes.push_back(segmentNode);
+    }
+
+    // --- create wave ---
+    Animation m_myAnimation4;
+    m_robotArmAnimations.clear();
+
+    for (int i = 0; i < 3; i++) {
+        
+        Animation temp;
+        CreateWaveAnimationSampler(i, &m_myAnimation4);
+    }
+    m_robotArmAnimations.push_back(m_myAnimation4);
+}
+
+void Scene::CreateWaveAnimationSampler(int nodeIndex, Animation* anim)
+{
+    // Samplers for the hand's translation and rotation.
+    AnimationSampler nodeTranslationSampler, nodeRotationSampler;
+
+    // Get the hand's structural bind pose.
+    DirectX::XMMATRIX nodeBindPose = DirectX::XMLoadFloat4x4(&m_robotArmSkeleton.GetJoint(nodeIndex)->localBindTransform);
+
+    // --- Keyframe 1: The Start Pose (t = 0.0s) ---
+    // The hand is in its default, non-animated state.
+    XMFLOAT3 startPos = BakeTranslationOntoBindPose(nodeBindPose, { 0.0f, 0.0f, 0.0f });
+    nodeTranslationSampler.timestamps.push_back(0.0f);
+    nodeTranslationSampler.vec3_values.push_back(startPos);
+
+    XMFLOAT4 startRot = BakeRotationOntoBindPose(nodeBindPose, { 0, 0, 1 }, 0.0f); // No rotation
+    nodeRotationSampler.timestamps.push_back(0.0f);
+    nodeRotationSampler.vec4_values.push_back(startRot);
+
+    // --- Keyframe 2: The End Pose (t = 2.0s) ---
+    // The hand is translated up and rotated 90 degrees to the side.
+    XMFLOAT3 endPos = BakeTranslationOntoBindPose(nodeBindPose, { 0.0f, 2.0f, 0.0f }); // Move up slightly
+    nodeTranslationSampler.timestamps.push_back(2.0f);
+    nodeTranslationSampler.vec3_values.push_back(endPos);
+
+    XMFLOAT4 endRot = BakeRotationOntoBindPose(nodeBindPose, { 0, 0, 1 }, DirectX::XM_PIDIV2); // Rotate 90 degrees
+    nodeRotationSampler.timestamps.push_back(2.0f);
+    nodeRotationSampler.vec4_values.push_back(endRot);
+
+    // --- Add Samplers and Channels for the node ---
+    anim->m_samplers.push_back(nodeTranslationSampler); // Sampler x
+    int nodeTranslationSamplerIndex = anim->m_samplers.size() - 1;
+    anim->m_samplers.push_back(nodeRotationSampler);    // Sampler x+1
+    int nodeRotationSamplerIndex = anim->m_samplers.size() - 1;
+
+
+    AnimationChannel transChannel;
+    transChannel.path = AnimationChannel::TRANSLATION;
+    transChannel.samplerIndex = nodeTranslationSamplerIndex;
+    transChannel.jointIndex = nodeIndex;
+    anim->m_channels.push_back(transChannel);
+
+    AnimationChannel rotChannel;
+    rotChannel.path = AnimationChannel::ROTATION;
+    rotChannel.samplerIndex = nodeRotationSamplerIndex;
+    rotChannel.jointIndex = nodeIndex;
+    anim->m_channels.push_back(rotChannel);
+
+}
+
 
 // Cleanup function, deletes the camera
 void Scene::cleanUp()
@@ -357,16 +612,17 @@ void Scene::animation1(const float deltaTime)
 
 void Scene::animation2(const float deltaTime)
 {
-	/*float* timer = &m_animationTimers[1];
+	float* timer = &m_animationTimers[1];
     if (m_animationPlaying) *timer += deltaTime;
 
 
-    AnimationSampler sampler1 = m_animations[1]->m_samplers[0];
 
+    AnimationSampler sampler0 = m_animations[1]->m_samplers[0];
+    AnimationSampler sampler0Rot = m_animations[1]->m_samplers[1];
     int nextKeyframe1 = -1;
-    for (int i = 0; i < sampler1.timestamps.size(); ++i)
+    for (int i = 0; i < sampler0.timestamps.size(); ++i)
     {
-        if (sampler1.timestamps[i] > m_animationTimers[1])
+        if (sampler0.timestamps[i] > m_animationTimers[1])
         {
             nextKeyframe1 = i;
             break;
@@ -378,25 +634,167 @@ void Scene::animation2(const float deltaTime)
 
 
     int prevKeyframe1 = nextKeyframe1 - 1;
-    float prevTime1 = sampler1.timestamps[prevKeyframe1];
-    float nextTime1 = sampler1.timestamps[nextKeyframe1];
+    float prevTime1 = sampler0.timestamps[prevKeyframe1];
+    float nextTime1 = sampler0.timestamps[nextKeyframe1];
     float t1 = (m_animationTimers[1] - prevTime1) / (nextTime1 - prevTime1);
 
 
-    DirectX::XMVECTOR prevPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[prevKeyframe1]);
-    DirectX::XMVECTOR nextPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[nextKeyframe1]);
-    DirectX::XMVECTOR finalPos1 = DirectX::XMVectorLerp(prevPos1, nextPos1, t1);
+    DirectX::XMVECTOR prevPos0 = DirectX::XMLoadFloat3(&sampler0.vec3_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextPos0 = DirectX::XMLoadFloat3(&sampler0.vec3_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalPos0 = DirectX::XMVectorLerp(prevPos0, nextPos0, t1);
 
 
-    DirectX::XMMATRIX object1Translation = DirectX::XMMatrixTranslationFromVector(finalPos1);
-	DirectX::XMMATRIX object1Transform = object1Translation;
+    DirectX::XMVECTOR prevRot0 = DirectX::XMLoadFloat4(&sampler0Rot.vec4_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextRot0 = DirectX::XMLoadFloat4(&sampler0Rot.vec4_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalRot0 = DirectX::XMQuaternionSlerp(prevRot0, nextRot0, t1);
 
-    m_sceneobject.GetRootNode(0)->SetMatrix(object1Transform);
 
-    if (m_animationTimers[1] >= sampler1.timestamps.back())
+    DirectX::XMMATRIX object1Translation0 = DirectX::XMMatrixTranslationFromVector(finalPos0);
+    DirectX::XMMATRIX object1Rotation0 = DirectX::XMMatrixRotationQuaternion(finalRot0);
+    DirectX::XMMATRIX object1Scale0 = DirectX::XMMatrixScaling(0.25f, 0.25f, 0.25f);
+	DirectX::XMMATRIX object1Transform0 = object1Scale0 * object1Rotation0* object1Translation0;
+    DirectX::XMMATRIX object2Translation = DirectX::XMMatrixTranslationFromVector(XMVECTOR() = {0.0f,1.5f,0.0f});
+    DirectX::XMMATRIX object2Scale = DirectX::XMMatrixScaling(0.75f, 0.75f, 0.75f);
+    DirectX::XMMATRIX object2Transform = object2Scale * object1Rotation0 * object2Translation;
+
+    m_sceneobject.GetRootNode(0)->SetMatrix(object1Transform0);
+    
+    SceneNode* child = m_sceneobject.GetRootNode(0)->GetChildNode(0);
+    child->SetMatrix(XMMatrixIdentity());
+    child->AddMatrix(object2Transform);
+
+    child = child->GetChildNode(0);
+    child->SetMatrix(XMMatrixIdentity());
+    child->AddMatrix(object2Transform);
+
+    child = child->GetChildNode(0);
+    child->SetMatrix(XMMatrixIdentity());
+    child->AddMatrix(object2Transform);
+
+
+    if (m_animationTimers[1] >= sampler0.timestamps.back())
         m_animationTimers[1] = 0;
     if (m_animationTimers[1] < -0.01)
-        m_animationTimers[1] = sampler1.timestamps.back();*/
+        m_animationTimers[1] = sampler0.timestamps.back();
+}
+
+void Scene::animation3(const float deltaTime) 
+{
+    float* timer = &m_animationTimers[2];
+    if (m_animationPlaying) *timer += deltaTime;
+
+
+
+    AnimationSampler sampler0 = m_animations[2]->m_samplers[0];
+    AnimationSampler sampler0Rot = m_animations[2]->m_samplers[0];
+    int nextKeyframe1 = -1;
+    for (int i = 0; i < sampler0.timestamps.size(); ++i)
+    {
+        if (sampler0.timestamps[i] > m_animationTimers[1])
+        {
+            nextKeyframe1 = i;
+            break;
+        }
+    }
+
+    if (nextKeyframe1 == -1 || nextKeyframe1 == 0)
+        nextKeyframe1 = 1;
+
+
+    int prevKeyframe1 = nextKeyframe1 - 1;
+    float prevTime1 = sampler0.timestamps[prevKeyframe1];
+    float nextTime1 = sampler0.timestamps[nextKeyframe1];
+    float t1 = (m_animationTimers[1] - prevTime1) / (nextTime1 - prevTime1);
+
+
+
+    if (m_animationTimers[2] >= sampler0.timestamps.back())
+        m_animationTimers[2] = 0;
+    if (m_animationTimers[2] < -0.01)
+        m_animationTimers[2] = sampler0.timestamps.back();
+}
+
+void Scene::animation4(const float deltaTime) 
+{
+    static bool doOnce = true;
+
+    if (doOnce)
+    {
+        doOnce = false;
+
+        m_robotArmSkeleton.PlayAnimation(&m_robotArmAnimations[0]);
+    }
+
+    // --- 2. Update the Skeleton's Pose ---
+    // This function now reads from the Animation object and updates all joint poses.
+    m_robotArmSkeleton.Update(deltaTime);
+
+    // --- 3. Sync Visible Nodes with Skeleton (This logic is crucial) ---
+    // This copies the final world matrix of each joint to its visible sphere.
+    for (int i = 0; i < m_robotArmSkeleton.GetBoneCount(); ++i)
+    {
+        Joint* joint = m_robotArmSkeleton.GetJoint(i);
+        DirectX::XMMATRIX finalWorldTransform = XMLoadFloat4x4(&joint->finalTransform);
+
+        m_armSegmentNodes[i]->SetMatrix(finalWorldTransform);
+    }
+
+    // ... (rest of the render calls)
+    // Note that m_armSegmentNodes is linked to m_sceneobject so you just need to call the m_sceneobject AnimateFrame and RenderFrame methods as you may already be doing
+
+    m_sceneobject.AnimateFrame(m_ctx);
+    m_sceneobject.RenderFrame(m_ctx, deltaTime);
+
+}
+
+DirectX::XMFLOAT3 Scene::BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation)
+{
+    // 1. Create the animation matrix from the vector.
+    DirectX::XMMATRIX animMatrix = DirectX::XMMatrixTranslation(animTranslation.x, animTranslation.y, animTranslation.z);
+
+    // 2. Bake the animation onto the bind pose.
+    DirectX::XMMATRIX finalLocalMatrix = animMatrix * bindPose;
+
+    // 3. Extract and return the final position.
+    DirectX::XMFLOAT3 finalPosition;
+    DirectX::XMStoreFloat3(&finalPosition, finalLocalMatrix.r[3]);
+    return finalPosition;
+}
+
+// Helper for Rotation
+DirectX::XMFLOAT4 Scene::BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& axis, float angleRadians)
+{
+    // 1. Create the animation matrix from the axis and angle.
+    DirectX::XMMATRIX animMatrix = DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&axis), angleRadians);
+
+    // 2. Bake the animation onto the bind pose.
+    DirectX::XMMATRIX finalLocalMatrix = animMatrix * bindPose;
+
+    // 3. Decompose to safely extract and return the final rotation quaternion.
+    DirectX::XMVECTOR scale, finalRotationQuat, translation;
+    DirectX::XMMatrixDecompose(&scale, &finalRotationQuat, &translation, finalLocalMatrix);
+
+    DirectX::XMFLOAT4 finalRotation;
+    DirectX::XMStoreFloat4(&finalRotation, finalRotationQuat);
+    return finalRotation;
+}
+
+// Helper for Scale
+DirectX::XMFLOAT3 Scene::BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animScale)
+{
+    // 1. Create the animation matrix from the vector.
+    DirectX::XMMATRIX animMatrix = DirectX::XMMatrixScaling(animScale.x, animScale.y, animScale.z);
+
+    // 2. Bake the animation onto the bind pose.
+    DirectX::XMMATRIX finalLocalMatrix = animMatrix * bindPose;
+
+    // 3. Decompose to safely extract and return the final scale vector.
+    DirectX::XMVECTOR finalScale, rotation, translation;
+    DirectX::XMMatrixDecompose(&finalScale, &rotation, &translation, finalLocalMatrix);
+
+    DirectX::XMFLOAT3 finalScaleVec;
+    DirectX::XMStoreFloat3(&finalScaleVec, finalScale);
+    return finalScaleVec;
 }
 
 // Update function to update the scene's state
@@ -404,12 +802,18 @@ void Scene::update(const float deltaTime)
 {
     switch (m_animationSelected)
     {
-        case 1:
-            animation1(deltaTime);
-			break;
-        case 2:
-            animation2(deltaTime);
-            break;
+    case 1:
+        animation1(deltaTime);
+        break;
+    case 2:
+        animation2(deltaTime);
+        break;
+    case 3:
+        animation3(deltaTime);
+        break;
+    case 4:
+        animation4(deltaTime);
+        break;
     }
 
 

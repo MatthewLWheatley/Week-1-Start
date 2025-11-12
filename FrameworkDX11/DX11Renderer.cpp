@@ -698,15 +698,22 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
         case 2:
             selectedAnim = m_pScene->m_animations[1];
             break;
+        case 3:
+            selectedAnim = m_pScene->m_animations[2];
+            break;
+        case 4:
+            selectedAnim = m_pScene->m_animations[3];
+            break;
         default:
             break;
         }
         if (!selectedAnim) goto ESCAPE;
         if (ImGui::TreeNode("Primative Controls"))
         {
+            float max = selectedAnim->m_samplers[0].timestamps[selectedAnim->m_samplers[0].timestamps.size() - 1];
             ImGui::Checkbox("Play Animation", &m_pScene->m_animationPlaying);
             ImGui::SameLine();
-            ImGui::DragFloat("Timer ", &m_pScene->m_animationTimers[0], 0.01f);
+            ImGui::SliderFloat("Timer ", &m_pScene->m_animationTimers[m_pScene->m_animationSelected-1], 0.0f,max);
 
             if (ImGui::TreeNode(("KeyFrames")))
             {
@@ -766,6 +773,16 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
         {
             m_pScene->initAnimation2();
             m_pScene->m_animationSelected = 2;
+        }
+        if (ImGui::Button("Animation 3"))
+        {
+            m_pScene->initAnimation3();
+            m_pScene->m_animationSelected = 3;
+        }
+        if (ImGui::Button("Animation 4"))
+        {
+            m_pScene->initAnimation4();
+            m_pScene->m_animationSelected = 4;
         }
     }
 

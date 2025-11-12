@@ -60,8 +60,16 @@ public:
 
 
 	void initAnimation1();
-
 	void initAnimation2();
+	void initAnimation3();
+	void initAnimation4();
+
+	void CreateWaveAnimationSampler(int nodeIndex, Animation* anim);
+
+	Skeleton m_robotArmSkeleton;
+	std::vector<SceneNode*> m_armSegmentNodes; // For the visible spheres
+	std::vector<Animation> m_robotArmAnimations; // To store our created clips
+
 
 private:
 	void setupLightProperties();
@@ -86,10 +94,17 @@ public:
 
 	Animation m_myAnimation1;
 	Animation m_myAnimation2;
-	vector<Animation*> m_animations;
-	vector<float> m_animationTimers;
+	Animation m_myAnimation3;
+	Animation m_myAnimation4;
+	vector<Animation*> m_animations = vector<Animation*>(100);
+	vector<float> m_animationTimers = vector<float>(100);
 	void animation1(const float deltaTime);
 	void animation2(const float deltaTime);
+	void animation3(const float deltaTime);
+	void animation4(const float deltaTime);
+	DirectX::XMFLOAT3 BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation);
+	DirectX::XMFLOAT4 BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& axis, float angleRadians);
+	DirectX::XMFLOAT3 BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animScale);
 	int m_animationSelected = 0;
 	bool m_animationPlaying = false;
 

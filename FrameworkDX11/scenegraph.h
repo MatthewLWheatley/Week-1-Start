@@ -181,6 +181,18 @@ public:
     XMFLOAT3    mTranslation;   // only used for debug animation
     XMFLOAT3    mScale;   // only used for debug animation
 
+    SceneNode* GetChildNode(size_t idx) {
+        if (idx < mChildren.size()) {
+            return &mChildren[idx];
+        }
+        return nullptr;
+    }
+
+    int GetChildCount() 
+    {
+        return mChildren.size();
+    }
+
 private:
     friend class SceneGraph;
     std::vector<ScenePrimitive> mPrimitives;
