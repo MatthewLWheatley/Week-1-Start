@@ -4,7 +4,6 @@
 #include "DX11Renderer.h"
 #include <algorithm>
 
-// Initialization function for the scene
 HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, DX11Renderer* renderer)
 {
 	m_pRenderer = renderer;
@@ -383,6 +382,7 @@ void Scene::initAnimation3()
     m_animationTimers[2] = 0.0f;
     initAnimation3_5();
 }
+
 void Scene::initAnimation3_5()
 {
     m_anim3_5Skeleton = Skeleton();
@@ -628,14 +628,11 @@ void Scene::CreateWaveAnimationSampler(int nodeIndex, Animation* anim)
 
 }
 
-
-// Cleanup function, deletes the camera
 void Scene::cleanUp()
 {
     delete m_pCamera;
 }
 
-// Function to set up lighting properties
 void Scene::setupLightProperties()
 {
 
@@ -907,23 +904,6 @@ void Scene::animation4(const float deltaTime)
 
 void Scene::animation5(const float deltaTime) 
 {
-    ConstantBuffer cb;
-    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());  // Identity world matrix
-    cb.mView = XMMatrixTranspose(getCamera()->getViewMatrix());  // Transpose for HLSL compatibility
-    cb.mProjection = XMMatrixTranspose(getCamera()->getProjectionMatrix());  // Transpose for HLSL compatibility
-    cb.vOutputColor = XMFLOAT4(0, 0, 1, 1);  // Placeholder for output color
-
-
-    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-    m_lightProperties.EyePosition = XMFLOAT4(m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z, 1);
-
-    m_pImmediateContext->UpdateSubresource(m_pLightConstantBuffer.Get(), 0, nullptr, &m_lightProperties, 0, 0);
-    ID3D11Buffer* buf = m_pLightConstantBuffer.Get();
-    m_pImmediateContext->PSSetConstantBuffers(1, 1, &buf);
-    m_pImmediateContext->PSSetShader(m_pRenderer->m_pAniPixelShader.Get(), nullptr, 0);
-
-
     m_sceneobject.AnimateFrame(m_ctx);
     m_sceneobject.RenderFrame(m_ctx, deltaTime);
 }
@@ -942,7 +922,6 @@ DirectX::XMFLOAT3 Scene::BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bi
     return finalPosition;
 }
 
-// Helper for Rotation
 DirectX::XMFLOAT4 Scene::BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& axis, float angleRadians)
 {
     // 1. Create the animation matrix from the axis and angle.
@@ -960,7 +939,6 @@ DirectX::XMFLOAT4 Scene::BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindP
     return finalRotation;
 }
 
-// Helper for Scale
 DirectX::XMFLOAT3 Scene::BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animScale)
 {
     // 1. Create the animation matrix from the vector.
@@ -978,7 +956,6 @@ DirectX::XMFLOAT3 Scene::BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose
     return finalScaleVec;
 }
 
-// Update function to update the scene's state
 void Scene::update(const float deltaTime)
 {
     switch (m_animationSelected)

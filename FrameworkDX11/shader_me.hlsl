@@ -12,6 +12,8 @@ cbuffer ConstantBuffer : register(b0)
     float rough = 0;
     float type = 2;
     float textureSelect = 1;
+    float4x4 g_boneTransforms[100]; // Must match max_bones on CPU
+    unsigned int bone_count;
 }
 
 cbuffer ConstantBuffer : register(b2)
@@ -87,19 +89,60 @@ struct PS_INPUT
 
 PS_INPUT VS(VS_INPUT input)
 {
-    PS_INPUT output = (PS_INPUT) 0;
+    PS_INPUT output;
     
-    // Transform the vertex position from object space to clip space (world -> view -> projection)
-    output.Pos = mul(input.Pos, World);
-    output.worldPos = output.Pos;
+    float4 finalPos;
+    float3 finalNorm;
+    
+    if (bone_count > 0)
+    {
+        float4 skinnedPos = float4(0, 0, 0, 0);
+        float3 skinnedNorm = float3(0, 0, 0);
+        
+        int index0 = input.Joints.x;
+        float4x4 joint0Matrix = g_boneTransforms[index0];
+        float joint0Weight = input.Weights.x;
+        skinnedPos += mul(input.Pos, joint0Matrix) * joint0Weight;
+        skinnedNorm += mul(input.Norm, (float3x3) joint0Matrix) * joint0Weight;
+        
+        int index1 = input.Joints.y;
+        float4x4 joint1Matrix = g_boneTransforms[index1];
+        float joint1Weight = input.Weights.y;
+        skinnedPos += mul(input.Pos, joint1Matrix) * joint1Weight;
+        skinnedNorm += mul(input.Norm, (float3x3) joint1Matrix) * joint1Weight;
+        
+        int index2 = input.Joints.z;
+        float4x4 joint2Matrix = g_boneTransforms[index2];
+        float joint2Weight = input.Weights.z;
+        skinnedPos += mul(input.Pos, joint2Matrix) * joint2Weight;
+        skinnedNorm += mul(input.Norm, (float3x3) joint2Matrix) * joint2Weight;
+        
+        int index3 = input.Joints.w;
+        float4x4 joint3Matrix = g_boneTransforms[index3];
+        float joint3Weight = input.Weights.w;
+        skinnedPos += mul(input.Pos, joint3Matrix) * joint3Weight;
+        skinnedNorm += mul(input.Norm, (float3x3) joint3Matrix) * joint3Weight;
+        
+        skinnedPos.w = 1.0f;
+        
+        finalPos = skinnedPos;
+        finalNorm = normalize(skinnedNorm);
+    }
+    else
+    {
+        finalPos = input.Pos;
+        finalNorm = input.Norm;
+    }
+    
+    output.Pos = mul(finalPos, World);
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
+    
+    output.Norm = mul(finalNorm, (float3x3) World);
+    output.Norm = normalize(output.Norm);
 
-    // Transform the normal vector from object space to world space
-    output.Norm = normalize(mul(float4(input.Norm, 0), World)).xyz;
-
-    output.Tex = input.Tex; // Pass the texture coordinates along
-
+    output.Tex = input.Tex;
+    
     return output;
 }
 

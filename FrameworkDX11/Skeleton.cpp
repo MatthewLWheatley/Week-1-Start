@@ -183,7 +183,7 @@ void Skeleton::Update(float deltaTime)
     //m_currentAnimationTime = 0.5f; // useful for testing
 
     for (int rootIndex : m_rootJointIndices) {
-        UpdateJointTransform(rootIndex, m_pCurrentAnimation, m_currentAnimationTime, DirectX::XMMatrixIdentity());
+        UpdateJointTransform(rootIndex, m_pCurrentAnimation, m_currentAnimationTime, rootTransform);
     }
     for (size_t i = 0; i < m_joints.size(); ++i) {
         XMMATRIX inv = XMLoadFloat4x4(&m_joints[i].inverseBindMatrix);

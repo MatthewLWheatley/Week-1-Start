@@ -190,9 +190,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="skinned_shader.hlsl">
-      <Filter>Animation</Filter>
-    </FxCompile>
     <FxCompile Include="shader_me.hlsl">
       <Filter>PBR</Filter>
     </FxCompile>
