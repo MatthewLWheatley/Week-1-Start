@@ -9,17 +9,6 @@ using namespace DirectX;
 // Structures
 //--------------------------------------------------------------------------------------
 
-
-struct ConstantBuffer
-{
-	XMMATRIX mWorld;
-	XMMATRIX mView;
-	XMMATRIX mProjection;
-	XMFLOAT4 vOutputColor;
-	XMMATRIX boneTransforms[max_bones];
-	unsigned int bone_count;
-};
-
 struct ConstantBufferSwitch
 {
 	XMMATRIX mWorld;

@@ -40,15 +40,6 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
 
     bd = {};
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBuffer);
-    if (FAILED(hr))
-        return hr;  // If buffer creation fails, return the error
-
-    bd = {};
-    bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(ConstantBufferlight);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
@@ -558,10 +549,9 @@ void Scene::initAnimation4()
 
 void Scene::initAnimation5() 
 {
-    m_sceneobject.Destroy();
     for (SceneGraph* object : m_objects)
     {
-        if (object)object->Destroy();
+        if (object) object->Destroy();
         object = nullptr;
     }
     m_objects = vector<SceneGraph*>(100);
@@ -571,10 +561,18 @@ void Scene::initAnimation5()
         m_animations[0]->m_name.clear();
         m_animations[0]->m_samplers.clear();
     }
-
+    HRESULT hr;
     m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\simplerig.gltf");
+    m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\fox.gltf");
+    m_sceneobject.mRootNodes[0].SetMatrix(XMMatrixIdentity());
+    m_sceneobject.mRootNodes[0].AddMatrix(XMMatrixRotationY(XMConvertToRadians(180)));
+    m_sceneobject.mRootNodes[1].SetMatrix(XMMatrixIdentity());
+    m_sceneobject.mRootNodes[1].AddMatrix(XMMatrixRotationY(XMConvertToRadians(180)));
+    m_sceneobject.mRootNodes[0].AddTranslation({ 2, 0, 0 });
+    m_sceneobject.mRootNodes[1].AddTranslation({ -2, 0, 0 });
 
     m_objects[0] = &m_sceneobject;
+    m_objects[1] = &m_sceneobject2;
 
 
 }
@@ -686,9 +684,9 @@ void Scene::animation1(const float deltaTime)
     AnimationSampler sampler1 = m_animations[0]->m_samplers[0];
     AnimationSampler sampler1Rot = m_animations[0]->m_samplers[1];
 
-    
+
     if (m_animationTimers[0] >= sampler1.timestamps.back())
-        m_animationTimers[0] = 0;if(m_animationPlaying) m_animationTimers[0] += deltaTime;
+        m_animationTimers[0] = 0; if (m_animationPlaying) m_animationTimers[0] += deltaTime;
     int nextKeyframe1 = -1;
     for (int i = 0; i < sampler1.timestamps.size(); ++i)
     {
@@ -758,13 +756,6 @@ void Scene::animation1(const float deltaTime)
     if (m_animationTimers[0] < -0.01)
         m_animationTimers[0] = sampler1.timestamps.back();
 
-
-    m_sceneobject.AnimateFrame(m_ctx);
-    m_sceneobject.RenderFrame(m_ctx, deltaTime);
-
-
-    m_sceneobject2.AnimateFrame(m_ctx);
-    m_sceneobject2.RenderFrame(m_ctx, deltaTime);
 }
 
 void Scene::animation2(const float deltaTime)
@@ -904,8 +895,6 @@ void Scene::animation4(const float deltaTime)
 
 void Scene::animation5(const float deltaTime) 
 {
-    m_sceneobject.AnimateFrame(m_ctx);
-    m_sceneobject.RenderFrame(m_ctx, deltaTime);
 }
 
 DirectX::XMFLOAT3 Scene::BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation)
@@ -1015,5 +1004,11 @@ void Scene::update(const float deltaTime)
     m_pImmediateContext->PSSetConstantBuffers(1, 1, &buf);
 
 
+    for(auto& var :m_objects)
+    {
+        if (!var) continue;
+        var->AnimateFrame(m_ctx);
+        var->RenderFrame(m_ctx,deltaTime);
+    }
 
 }

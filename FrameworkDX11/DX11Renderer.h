@@ -79,7 +79,6 @@ public: // properties
 
 
 	XMFLOAT4X4				m_matProjection;
-	ConstantBuffer			m_ConstantBufferData;
 	ConstantBufferSwitch	m_ConstantBufferDataSwitch;
 
 

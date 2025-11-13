@@ -587,8 +587,8 @@ bool SceneGraph::LoadSceneFromGltfWithSkeleton(IRenderingContext& ctx,
         scene.nodes.size());
 
     // Nodes hierarchy
-    mRootNodes.clear();
-    mRootNodes.reserve(scene.nodes.size());
+    //mRootNodes.clear();
+    //mRootNodes.reserve(scene.nodes.size());
     for (const auto nodeIdx : scene.nodes)
     {
         SceneNode sceneNode(true);
@@ -696,7 +696,6 @@ void SceneGraph::AddTranslationToRoots(const std::vector<double> &vec)
         rootNode.AddTranslation(vec);
 }
 
-
 void SceneGraph::AddMatrixToRoots(const std::vector<double> &vec)
 {
     for (auto &rootNode : mRootNodes)
@@ -730,12 +729,11 @@ void SceneGraph::RenderFrame(IRenderingContext& ctx, const float deltaTime)
     data->textureSelect = ctx.getDXRenderer()->m_pScene->textureSelect;
     data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
     data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
-
+    data->bone_count = 0;
     // Scene geometry
     for (auto& node : mRootNodes)
         RenderNode(ctx, node, XMMatrixIdentity(), deltaTime);
 }
-
 
 void SceneGraph::RenderNode(IRenderingContext& ctx,
     SceneNode& node,
@@ -745,52 +743,34 @@ void SceneGraph::RenderNode(IRenderingContext& ctx,
     if (!ctx.IsValid())
         return;
 
-    XMMATRIX world = node.mWorldMtrx * parentWorldMtrx;
-    auto immCtx = ctx.GetImmediateContext();
+    node.mWorldMtrx = node.mLocalMtrx * parentWorldMtrx;
+    XMMATRIX world = node.mWorldMtrx;
 
-    // Always use ConstantBufferSwitch for everything
+
     ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
-
-    // Update skeleton if present
     if (node.m_skeleton.IsLoaded())
     {
         if (node.m_skeleton.CurrentAnimation() == nullptr)
             node.m_skeleton.PlayAnimation(0u);
-
         node.m_skeleton.Update(deltaTime);
-
-        // Send bone transforms
         const unsigned int max_bones = 100;
         node.m_skeleton.GetSkinningMatrices(data->boneTransforms, max_bones);
         data->bone_count = node.m_skeleton.GetBoneCount();
     }
-    else
-    {
-        // No skeleton - set bone count to 0
-        data->bone_count = 0;
-    }
 
-    // Draw all primitives with unified shader
+    // Draw current node
     for (auto& primitive : node.mPrimitives)
     {
+        // update the per-node constant buffer
+        auto immCtx = ctx.GetImmediateContext();
+
+        // store world and the view / projection in a constant buffer for the vertex shader to use
         data->mWorld = DirectX::XMMatrixTranspose(world);
-        data->mView = XMMatrixTranspose(ctx.getDXRenderer()->m_pScene->m_pCamera->getViewMatrix());
-        data->mProjection = XMMatrixTranspose(XMLoadFloat4x4(&ctx.getDXRenderer()->m_matProjection));
-        data->frank = XMFLOAT4(ctx.getDXRenderer()->m_pScene->albedo.x,
-            ctx.getDXRenderer()->m_pScene->albedo.y,
-            ctx.getDXRenderer()->m_pScene->albedo.z, 1.0f);
-        data->metal = ctx.getDXRenderer()->m_pScene->metal;
-        data->rough = ctx.getDXRenderer()->m_pScene->rough;
-        data->type = ctx.getDXRenderer()->m_pScene->type;
-        data->textureSelect = ctx.getDXRenderer()->m_pScene->textureSelect;
-
-        immCtx->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.Get(),
-            0, nullptr, data, 0, 0);
-
-        // Use your unified shader
-        immCtx->VSSetShader(ctx.getDXRenderer()->m_pVertexShader.Get(), nullptr, 0);
-        immCtx->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
-        immCtx->PSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
+        ctx.GetImmediateContext()->UpdateSubresource(ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.Get(), 0, nullptr, data, 0, 0);
+        // Render a cube
+        ctx.GetImmediateContext()->VSSetShader(ctx.getDXRenderer()->m_pVertexShader.Get(), nullptr, 0);
+        ctx.GetImmediateContext()->VSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
+        ctx.GetImmediateContext()->PSSetConstantBuffers(0, 1, ctx.getDXRenderer()->m_pScene->m_pConstantBufferSwitch.GetAddressOf());
 
         primitive.DrawGeometry(ctx, ctx.getDXRenderer()->m_pVertexLayout.Get());
     }
@@ -1859,7 +1839,6 @@ void ScenePrimitive::GetNormal(float outnormal[],
     outnormal[2] = normal.z;
 }
 
-
 void ScenePrimitive::GetTextCoord(float outuv[],
                                   const int face,
                                   const int vertex) const
@@ -1868,7 +1847,6 @@ void ScenePrimitive::GetTextCoord(float outuv[],
     outuv[0] = tex.x;
     outuv[1] = tex.y;
 }
-
 
 void ScenePrimitive::SetTangent(const float intangent[],
                                 const float sign,
@@ -1881,7 +1859,6 @@ void ScenePrimitive::SetTangent(const float intangent[],
     tangent.z = intangent[2];
     tangent.w = sign;
 }
-
 
 bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
 {
@@ -1932,13 +1909,11 @@ bool ScenePrimitive::CreateDeviceBuffers(IRenderingContext & ctx)
     return true;
 }
 
-
 void ScenePrimitive::Destroy()
 {
     DestroyGeomData();
     DestroyDeviceBuffers();
 }
-
 
 void ScenePrimitive::DestroyGeomData()
 {
@@ -1947,13 +1922,11 @@ void ScenePrimitive::DestroyGeomData()
     mTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
-
 void ScenePrimitive::DestroyDeviceBuffers()
 {
     Utils::ReleaseAndMakeNull(mVertexBuffer);
     Utils::ReleaseAndMakeNull(mIndexBuffer);
 }
-
 
 void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* vertexLayout) const
 {
@@ -1968,7 +1941,6 @@ void ScenePrimitive::DrawGeometry(IRenderingContext &ctx, ID3D11InputLayout* ver
 
     immCtx->DrawIndexed((UINT)mIndices.size(), 0, 0);
 }
-
 
 SceneNode::SceneNode(bool isRootNode) :
     mIsRootNode(isRootNode),
@@ -2256,22 +2228,6 @@ bool SceneNode::LoadFromGLTF(IRenderingContext & ctx,
 
 void SceneNode::Animate(IRenderingContext &ctx)
 {
-    //if (mIsRootNode)
-    //{
-    //    const float time = ctx.GetFrameAnimationTime();
-    //    const float period = 15.f; //seconds
-    //    const float totalAnimPos = time / period;
-    //    const float angle = totalAnimPos * XM_2PI;
-
-    //    const XMMATRIX rotMtrx = XMMatrixRotationY(angle);
-
-    //    mWorldMtrx = mLocalMtrx * rotMtrx;
-    //}
-    //else
-   //     mWorldMtrx = mLocalMtrx;
-
-    mWorldMtrx = mLocalMtrx;
-
-    for (auto &child : mChildren)
+    for (auto& child : mChildren)
         child.Animate(ctx);
 }

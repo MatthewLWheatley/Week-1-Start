@@ -133,7 +133,7 @@ PS_INPUT VS(VS_INPUT input)
         finalPos = input.Pos;
         finalNorm = input.Norm;
     }
-    
+    output.worldPos = mul(finalPos, World);
     output.Pos = mul(finalPos, World);
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);

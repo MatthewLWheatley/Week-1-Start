@@ -628,6 +628,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
     {
         if (m_pScene->lightCount + 1 < MAX_LIGHTS) {
             m_pScene->m_lightProperties.Lights[m_pScene->lightCount].Enabled = true;
+
             m_pScene->lightCount++;
         }
     }
@@ -648,8 +649,13 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
             XMFLOAT4 objPos = m_pScene->m_lightProperties.Lights[x].Position;
 
 
-            if (ImGui::DragFloat3(("LPosition##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
+            if (ImGui::DragFloat3(("Position##" + std::to_string(x)).c_str(), &objPos.x, 0.1f)) {
                 m_pScene->m_lightProperties.Lights[x].Position = objPos;
+            }
+            XMFLOAT4 clr = m_pScene->m_lightProperties.Lights[x].Color;
+            if (ImGui::ColorEdit4(("Color##" + std::to_string(x)).c_str(), &clr.x))
+            {
+                m_pScene->m_lightProperties.Lights[x].Color = clr;
             }
         }
     }
