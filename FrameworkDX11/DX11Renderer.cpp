@@ -686,8 +686,12 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
         case 4:
             selectedAnim = m_pScene->m_animations[3];
             break;
-        default:
+        case 5:
             break;
+        case 6:
+            break;
+        default:
+            break; 
         }
         if (!selectedAnim) goto ESCAPE;
         if (ImGui::TreeNode("Primative Controls"))
@@ -746,6 +750,79 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
             ImGui::TreePop();
         }
     ESCAPE:
+        if (m_pScene->m_animationSelected >= 5) 
+        {
+            if (ImGui::TreeNode("Skel Controls"))
+            {
+                for (int x = 0; x < m_pScene->m_objects.size(); x++)
+                {
+                    auto& object = m_pScene->m_objects[x];
+                    if (!object) continue;
+                    if (ImGui::TreeNode(("Object " + std::to_string(x)).c_str())) {
+
+                        for (int y = 0; y < object->mRootNodes.size(); y++)
+                        {
+                            auto& node = object->mRootNodes[y];
+                            if (ImGui::TreeNode(("Node " + std::to_string(y)).c_str())) 
+                            {
+                                XMMATRIX temp = node.GetWorldMtrx();
+
+                                XMVECTOR scaleV, rotQ, transV;
+                                XMMatrixDecompose(&scaleV, &rotQ, &transV, temp);
+                                XMFLOAT3 objPos, scale;
+                                XMStoreFloat3(&objPos, transV);
+                                XMStoreFloat3(&scale, scaleV);
+
+                                if (ImGui::DragFloat3(("Position##" + std::to_string(y)).c_str(), &objPos.x, 0.1f)) {
+                                }
+                                XMMATRIX out = XMMatrixIdentity();
+                                XMMATRIX posM = XMMatrixTranslation(objPos.x, objPos.y, objPos.z);
+                                XMMATRIX scaleM = XMMatrixScalingFromVector(scaleV);
+                                XMMATRIX rotM = XMMatrixRotationQuaternion(rotQ);
+                                out = scaleM * rotM * posM;
+                                node.SetMatrix(out);
+
+                                Skeleton* skel = node.GetSkeleton();
+                                if (ImGui::Button("Play/Pause"))
+                                {
+                                    skel->m_AnimationState = !skel->m_AnimationState;
+                                }
+                                int count = skel->GetAnimationCount();
+                                vector<string> anims = {};
+                                for (int z = 0; z < skel->GetAnimationCount(); z++)
+                                {
+                                    anims.push_back(skel->GetAnimationName(z));
+                                }
+                                int current = skel->m_playingAnimation;
+                                int old = current;
+                                if (anims.size() > 1) {
+                                    string selected = anims[current];
+                                    if (ImGui::BeginCombo(("Animations " + std::to_string(y)).c_str(), anims[current].c_str()))
+                                    {
+                                        for (int n = 0; n < anims.size(); n++)
+                                        {
+                                            bool isSelected = (anims[n] == selected);
+                                            if (ImGui::Selectable((std::to_string(n) + " :" + anims[n]).c_str(), isSelected))
+                                            {
+                                                current = n;
+                                                selected = anims[n];
+                                            }
+                                            if (isSelected)
+                                                ImGui::SetItemDefaultFocus();
+                                        }
+                                        ImGui::EndCombo();
+                                    }
+                                    if (current != old) skel->PlayAnimation(current);
+                                }
+                                ImGui::TreePop();
+                            }
+                        }
+                        ImGui::TreePop();
+                    }
+                }
+                ImGui::TreePop();
+            }
+        }
         if (ImGui::Button("Animation 1")) 
         {
             m_pScene->initAnimation1();
@@ -766,10 +843,15 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
             m_pScene->initAnimation4();
             m_pScene->m_animationSelected = 4;
         }
-        if (ImGui::Button("Animations 5")) 
+        if (ImGui::Button("Animation 5")) 
         {
             m_pScene->initAnimation5();
             m_pScene->m_animationSelected = 5;
+        }
+        if (ImGui::Button("Animation 6"))
+        {
+            m_pScene->initAnimation6();
+            m_pScene->m_animationSelected = 6;
         }
     }
 

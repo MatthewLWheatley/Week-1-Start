@@ -22,8 +22,6 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     m_ctx.Init(device.Get(), context.Get(), renderer);
     // Load a 3D model (e.g., a sphere) from a .gltf file into the scene object
     
-    m_animations.push_back(&m_myAnimation1);
-    m_animations.push_back(&m_myAnimation2);
     
     // Create a camera with initial position, target, and up vector
     m_pCamera = new Camera(XMFLOAT3(0, 0, -10), XMFLOAT3(0, 0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), width, height);
@@ -504,45 +502,39 @@ void Scene::initAnimation4()
     DirectX::XMStoreFloat4x4(&shoulderTransform, DirectX::XMMatrixIdentity());
     int shoulderIndex = m_robotArmSkeleton.AddJoint(-1, shoulderTransform);
 
-    // We will scale the elbow and hand nodes in turn
     DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(0.75, 0.75, 0.75);
 
-    // The elbow is a child of the shoulder, translated down.
     DirectX::XMFLOAT4X4 elbowTransform;
     DirectX::XMStoreFloat4x4(&elbowTransform, scale * DirectX::XMMatrixTranslation(0.0f, segmentLength, 0.0f));
     int elbowIndex = m_robotArmSkeleton.AddJoint(shoulderIndex, elbowTransform);
 
-    // The hand is a child of the elbow, also translated down.
     DirectX::XMFLOAT4X4 handTransform;
     DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(0.0f, segmentLength, 0.0f);
 
     DirectX::XMStoreFloat4x4(&handTransform, scale * translation);
     int handIndex = m_robotArmSkeleton.AddJoint(elbowIndex, handTransform);
-
-    // this must be done first as the root nodes might change as the vector is resized. 
+ 
     for (int i = 0; i < m_robotArmSkeleton.GetBoneCount(); ++i) {
         m_sceneobject.CreateRootNode();
     }
     m_objects[0] = &m_sceneobject;
 
-    // --- 2. Create the Visible Geometry for Each Joint ---
     for (int i = 0; i < m_robotArmSkeleton.GetBoneCount(); ++i) {
         SceneNode* segmentNode = m_sceneobject.GetRootNode(i);
 
         segmentNode->LoadSphere(m_ctx);
-        //segmentNode->AddTranslation({ i * 2.0f, 0, 0 });
 
         m_armSegmentNodes.push_back(segmentNode);
     }
 
-    // --- create wave ---
     Animation m_myAnimation4;
+    m_myAnimation4.m_name = "new Wave";
     m_robotArmAnimations.clear();
 
     for (int i = 0; i < 3; i++) {
         
         Animation temp;
-        CreateWaveAnimationSampler(i, &m_myAnimation4);
+        CreateWaveAnimationSampler1(i, &m_myAnimation4, &m_robotArmSkeleton);
     }
     m_robotArmAnimations.push_back(m_myAnimation4);
 }
@@ -565,25 +557,83 @@ void Scene::initAnimation5()
     m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\simplerig.gltf");
     m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\fox.gltf");
     m_sceneobject.mRootNodes[0].SetMatrix(XMMatrixIdentity());
-    m_sceneobject.mRootNodes[0].AddMatrix(XMMatrixRotationY(XMConvertToRadians(180)));
+    m_sceneobject.mRootNodes[0].AddMatrix(XMMatrixRotationX(XMConvertToRadians(-90)));
     m_sceneobject.mRootNodes[1].SetMatrix(XMMatrixIdentity());
     m_sceneobject.mRootNodes[1].AddMatrix(XMMatrixRotationY(XMConvertToRadians(180)));
     m_sceneobject.mRootNodes[0].AddTranslation({ 2, 0, 0 });
     m_sceneobject.mRootNodes[1].AddTranslation({ -2, 0, 0 });
 
     m_objects[0] = &m_sceneobject;
-    m_objects[1] = &m_sceneobject2;
 
+    Animation m_myAnimation4;
+    m_myAnimation4.m_name = "new Wave";
 
+    
+    CreateWaveAnimationSampler2(1, &m_myAnimation4, m_sceneobject.mRootNodes[0].GetSkeleton());
+    
+
+    m_sceneobject.mRootNodes[0].GetSkeleton()->AddAnimation(&m_myAnimation4);
 }
 
-void Scene::CreateWaveAnimationSampler(int nodeIndex, Animation* anim)
+void Scene::initAnimation6() 
+{
+    for (SceneGraph* object : m_objects)
+    {
+        if (object) object->Destroy();
+        object = nullptr;
+    }
+    m_objects = vector<SceneGraph*>(100);
+    if (m_animations[0])
+    {
+        m_animations[0]->m_channels.clear();
+        m_animations[0]->m_name.clear();
+        m_animations[0]->m_samplers.clear();
+    }
+    HRESULT hr;
+    m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\fox.gltf");
+    m_sceneobject.mRootNodes[0].SetMatrix(XMMatrixIdentity());
+    m_sceneobject.mRootNodes[0].AddMatrix(XMMatrixRotationY(XMConvertToRadians(225)));
+    m_sceneobject.mRootNodes[0].AddTranslation({ 0, -2, -5 });
+
+    m_objects[0] = &m_sceneobject;
+
+    AnimationSampler sampler2;
+    sampler2.interpolation = AnimationSampler::LINEAR;
+
+    float orbitRadius = 2.0f;
+    int numKeyframes = 8;
+    float animDuration = 4.0f;
+
+    for (int i = 0; i <= numKeyframes; ++i)
+    {
+        float t = (float)i / (float)numKeyframes;
+        float angle = t * XM_2PI;
+        float timeStamp = t * animDuration;
+
+        sampler2.timestamps.push_back(timeStamp);
+        sampler2.vec3_values.push_back(XMFLOAT3(
+            cos(angle) * orbitRadius,
+            0.0f,
+            sin(angle) * orbitRadius
+        ));
+    }
+
+
+    m_myAnimation6.m_samplers.push_back(sampler2);
+
+    m_myAnimation6.m_samplers.push_back(sampler2);
+
+    m_animations[5] = &m_myAnimation6;
+    m_animationTimers[5] = 0.0f;
+}
+
+void Scene::CreateWaveAnimationSampler1(int nodeIndex, Animation* anim, Skeleton* skel)
 {
     // Samplers for the hand's translation and rotation.
     AnimationSampler nodeTranslationSampler, nodeRotationSampler;
 
     // Get the hand's structural bind pose.
-    DirectX::XMMATRIX nodeBindPose = DirectX::XMLoadFloat4x4(&m_robotArmSkeleton.GetJoint(nodeIndex)->localBindTransform);
+    DirectX::XMMATRIX nodeBindPose = DirectX::XMLoadFloat4x4(&skel->GetJoint(nodeIndex)->localBindTransform);
 
     // --- Keyframe 1: The Start Pose (t = 0.0s) ---
     // The hand is in its default, non-animated state.
@@ -602,6 +652,55 @@ void Scene::CreateWaveAnimationSampler(int nodeIndex, Animation* anim)
     nodeTranslationSampler.vec3_values.push_back(endPos);
 
     XMFLOAT4 endRot = BakeRotationOntoBindPose(nodeBindPose, { 0, 0, 1 }, DirectX::XM_PIDIV2); // Rotate 90 degrees
+    nodeRotationSampler.timestamps.push_back(2.0f);
+    nodeRotationSampler.vec4_values.push_back(endRot);
+
+    // --- Add Samplers and Channels for the node ---
+    anim->m_samplers.push_back(nodeTranslationSampler); // Sampler x
+    int nodeTranslationSamplerIndex = anim->m_samplers.size() - 1;
+    anim->m_samplers.push_back(nodeRotationSampler);    // Sampler x+1
+    int nodeRotationSamplerIndex = anim->m_samplers.size() - 1;
+
+
+    AnimationChannel transChannel;
+    transChannel.path = AnimationChannel::TRANSLATION;
+    transChannel.samplerIndex = nodeTranslationSamplerIndex;
+    transChannel.jointIndex = nodeIndex;
+    anim->m_channels.push_back(transChannel);
+
+    AnimationChannel rotChannel;
+    rotChannel.path = AnimationChannel::ROTATION;
+    rotChannel.samplerIndex = nodeRotationSamplerIndex;
+    rotChannel.jointIndex = nodeIndex;
+    anim->m_channels.push_back(rotChannel);
+
+}
+
+void Scene::CreateWaveAnimationSampler2(int nodeIndex, Animation* anim, Skeleton* skel)
+{
+    // Samplers for the hand's translation and rotation.
+    AnimationSampler nodeTranslationSampler, nodeRotationSampler;
+
+    // Get the hand's structural bind pose.
+    DirectX::XMMATRIX nodeBindPose = DirectX::XMLoadFloat4x4(&skel->GetJoint(nodeIndex)->localBindTransform);
+
+    // --- Keyframe 1: The Start Pose (t = 0.0s) ---
+    // The hand is in its default, non-animated state.
+    XMFLOAT3 startPos = BakeTranslationOntoBindPose(nodeBindPose, { 0.0f, 0.0f, 0.0f });
+    nodeTranslationSampler.timestamps.push_back(0.0f);
+    nodeTranslationSampler.vec3_values.push_back(startPos);
+
+    XMFLOAT4 startRot = BakeRotationOntoBindPose(nodeBindPose, { 0, 0, 1 }, 0.0f); // No rotation
+    nodeRotationSampler.timestamps.push_back(0.0f);
+    nodeRotationSampler.vec4_values.push_back(startRot);
+
+    // --- Keyframe 2: The End Pose (t = 2.0s) ---
+    // The hand is translated up and rotated 90 degrees to the side.
+    XMFLOAT3 endPos = BakeTranslationOntoBindPose(nodeBindPose, { 0.0f, 0.0f, 0.0f }); // Move up slightly
+    nodeTranslationSampler.timestamps.push_back(2.0f);
+    nodeTranslationSampler.vec3_values.push_back(endPos);
+
+    XMFLOAT4 endRot = BakeRotationOntoBindPose(nodeBindPose, { 1, 0, 0 }, DirectX::XM_PIDIV4); // Rotate 90 degrees
     nodeRotationSampler.timestamps.push_back(2.0f);
     nodeRotationSampler.vec4_values.push_back(endRot);
 
@@ -897,6 +996,24 @@ void Scene::animation5(const float deltaTime)
 {
 }
 
+void Scene::animation6(const float deltaTime) 
+{
+    AnimationSampler sampler1 = m_animations[5]->m_samplers[0];
+    float* animationTimer = &m_animationTimers[5];
+
+    if (*animationTimer >= sampler1.timestamps.back())
+        *animationTimer = 0; if (m_animationPlaying) *animationTimer += deltaTime;
+    int nextKeyframe1 = -1;
+    for (int i = 0; i < sampler1.timestamps.size(); ++i)
+    {
+        if (sampler1.timestamps[i] > *animationTimer)
+        {
+            nextKeyframe1 = i;
+            break;
+        }
+    }
+}
+
 DirectX::XMFLOAT3 Scene::BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation)
 {
     // 1. Create the animation matrix from the vector.
@@ -963,6 +1080,9 @@ void Scene::update(const float deltaTime)
         break;
     case 5:
         animation5(deltaTime);
+        break;
+    case 6:
+        animation6(deltaTime);
         break;
     }
 

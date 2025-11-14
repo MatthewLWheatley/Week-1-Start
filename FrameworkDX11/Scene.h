@@ -65,8 +65,11 @@ public:
 	void initAnimation3_5();
 	void initAnimation4();
 	void initAnimation5();
+	void initAnimation6();
 
-	void CreateWaveAnimationSampler(int nodeIndex, Animation* anim);
+	void CreateWaveAnimationSampler1(int nodeIndex, Animation* anim, Skeleton* skel);
+
+	void CreateWaveAnimationSampler2(int nodeIndex, Animation* anim, Skeleton* skel);
 
 	Skeleton m_robotArmSkeleton;
 	std::vector<SceneNode*> m_armSegmentNodes;
@@ -100,6 +103,7 @@ public:
 	Animation m_myAnimation3;
 	Animation m_myAnimation3_5;
 	Animation m_myAnimation4;
+	Animation m_myAnimation6;
 	vector<Animation*> m_animations = vector<Animation*>(100);
 	vector<float> m_animationTimers = vector<float>(100);
 	void animation1(const float deltaTime);
@@ -107,6 +111,7 @@ public:
 	void animation3(const float deltaTime);
 	void animation4(const float deltaTime);
 	void animation5(const float deltaTime);
+	void animation6(const float deltaTime);
 	DirectX::XMFLOAT3 BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation);
 	DirectX::XMFLOAT4 BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& axis, float angleRadians);
 	DirectX::XMFLOAT3 BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animScale);

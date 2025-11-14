@@ -55,6 +55,23 @@ public:
         return &m_joints[joint];
     }
 
+    std::string GetAnimationName(const int animation)
+    {
+        if (animation >= m_animationCount && animation < 0) 
+        {
+            return "";
+        }
+        return m_animations[animation].m_name;
+    }
+    int m_playingAnimation = 0;
+    bool m_AnimationState = true;
+
+    void AddAnimation(Animation* animation) {
+        m_animations.push_back(*animation);
+        m_animationCount = m_animations.size();
+    }
+
+
 private:
     // Change the signature to accept a pointer.
     void UpdateJointTransform(int jointIndex, const Animation* anim, float time, const DirectX::XMMATRIX& parentTransform);

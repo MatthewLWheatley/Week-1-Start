@@ -18,6 +18,7 @@ void Skeleton::PlayAnimation(const unsigned int animation)
 
     m_pCurrentAnimation = &m_animations[animation];
     m_currentAnimationTime = m_pCurrentAnimation->GetStartTime();
+    m_playingAnimation = animation;
 }
 
 void Skeleton::PlayAnimation(Animation* anim)
@@ -171,7 +172,7 @@ void Skeleton::Update(float deltaTime)
 {
     // Load the root transform we found during loading.
     DirectX::XMMATRIX rootTransform = DirectX::XMLoadFloat4x4(&m_rootTransform);
-
+    if (!m_AnimationState) return;
     if (m_pCurrentAnimation)
     {
         m_currentAnimationTime += deltaTime;
