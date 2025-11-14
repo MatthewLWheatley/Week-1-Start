@@ -57,13 +57,38 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
 
-    // Load texture resources
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete_Albedo.dds", nullptr, &m_pTextureDiffuse);
+    //// Load texture resources
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
+    //if (FAILED(hr)) m_pTextureDiffuse = nullptr;
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_metal.dds", nullptr, &m_pTextureMetallic);
+    //if (FAILED(hr)) m_pTextureMetallic = nullptr;
+    ////hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
+    //if (FAILED(hr))m_pTextureRoughness = nullptr; 
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
+    //if (FAILED(hr)) m_pTextureDiffuse = nullptr;
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
+    //if (FAILED(hr)) m_pTextureMetallic = nullptr;
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+    //if (FAILED(hr))m_pTextureRoughness = nullptr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete044D_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
+    if (FAILED(hr)) return hr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete044D_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
+    if (FAILED(hr)) return hr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete044D_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+    if (FAILED(hr)) return hr;/*
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr)) m_pTextureDiffuse = nullptr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete_Metallic.dds", nullptr, &m_pTextureMetallic);
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
     if (FAILED(hr)) m_pTextureMetallic = nullptr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete_Roughness.dds", nullptr, &m_pTextureRoughness);
-    if (FAILED(hr))m_pTextureRoughness = nullptr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+    if (FAILED(hr))m_pTextureRoughness = nullptr;*/
+
+    /*hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\scratched-metal_albedo.dds", nullptr, &m_pTextureDiffuse);
+    if (FAILED(hr)) m_pTextureDiffuse = nullptr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\scratched-metal_metallic.dds", nullptr, &m_pTextureMetallic);
+    if (FAILED(hr)) m_pTextureMetallic = nullptr;
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\scratched-metal_roughness.dds", nullptr, &m_pTextureRoughness);
+    if (FAILED(hr))m_pTextureRoughness = nullptr;*/
     /*
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_albedo.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr))
@@ -71,9 +96,9 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_metallic.dds", nullptr, &m_pTextureMetallic);
     if (FAILED(hr))
         return hr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_rough.dds", nullptr, &m_pTextureRoughness);*/
+    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\space_rough.dds", nullptr, &m_pTextureRoughness);*//*
     if (FAILED(hr))
-        return hr;
+        return hr;*/
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\SpecularCM.dds", nullptr, &m_pTextureSpecularIBL);
     if (FAILED(hr))
         return hr;
@@ -847,7 +872,7 @@ void Scene::setupLightProperties()
     Light light;
     light.Enabled = static_cast<int>(true);  // Enable the light
     light.LightType = PointLight;  // Set light type to point light
-    light.Color = XMFLOAT4(1, 1, 1, 1);  // Set the light color to white
+    light.Color = XMFLOAT4(0, 0, 1, 1);  // Set the light color to white
     light.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
     light.ConstantAttenuation = 1.0f;  // Attenuation factors
     light.LinearAttenuation = 0.0045f;
@@ -856,17 +881,17 @@ void Scene::setupLightProperties()
 	Light light2;
 	light2.Enabled = static_cast<int>(true);  // Enable the light
 	light2.LightType = PointLight;  // Set light type to point light
-	light2.Color = XMFLOAT4(1, 1, 1, 1);  // Set the light color to white
+	light2.Color = XMFLOAT4(1, 0, 0, 1);  // Set the light color to white
 	light2.SpotAngle = XMConvertToRadians(45.0f);  // Set the spotlight's angle
 	light2.ConstantAttenuation = 1.0f;  // Attenuation factors
-	light2.LinearAttenuation = 0.0045f;
-	light2.QuadraticAttenuation = 0.00075f;
+	light2.LinearAttenuation = 0.09f;
+	light2.QuadraticAttenuation = 0.032f;
 
     // Set up the light position based on the camera's position
-    XMFLOAT4 LightPosition(5, 5, -6, 1);
+    XMFLOAT4 LightPosition(3.5f, 0, 0, 1);
     light.Position = LightPosition;
     
-    LightPosition = XMFLOAT4(-5, 5, -6, 1);
+    LightPosition = XMFLOAT4(-3.5, 0, 0, 1);
     light2.Position = LightPosition;
     for (int x = 0; x < MAX_LIGHTS; x++)
     {
@@ -1107,7 +1132,7 @@ void Scene::animation5(const float deltaTime)
 {
 }
 
-void Scene::animation6(const float deltaTime) 
+void Scene::animation6(const float deltaTime)
 {
     AnimationSampler sampler1 = m_animations[5]->m_samplers[0];
     AnimationSampler sampler2 = m_animations[5]->m_samplers[1];
@@ -1116,8 +1141,9 @@ void Scene::animation6(const float deltaTime)
     float* animationTimer = &m_animationTimers[5];
 
     if (m_animationTimers[5] >= sampler1.timestamps.back())
-        m_animationTimers[5] = 0; 
+        m_animationTimers[5] = 0;
     if (m_animationPlaying) m_animationTimers[5] += deltaTime;
+
     int nextKeyframe1 = -1;
     for (int i = 0; i < sampler1.timestamps.size(); ++i)
     {
@@ -1136,6 +1162,7 @@ void Scene::animation6(const float deltaTime)
     float nextTime1 = sampler1.timestamps[nextKeyframe1];
     float t1 = (m_animationTimers[5] - prevTime1) / (nextTime1 - prevTime1);
 
+    // First fox animation (large one)
     DirectX::XMVECTOR prevPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[prevKeyframe1]);
     DirectX::XMVECTOR nextPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[nextKeyframe1]);
     DirectX::XMVECTOR finalPos1 = DirectX::XMVectorLerp(prevPos1, nextPos1, t1);
@@ -1146,27 +1173,33 @@ void Scene::animation6(const float deltaTime)
 
     DirectX::XMMATRIX object1Rotation = XMMatrixRotationQuaternion(finalRot1);
     DirectX::XMMATRIX object1Translation = DirectX::XMMatrixTranslationFromVector(finalPos1);
-
     XMMATRIX object1Scale = XMMatrixIdentity();
-
     DirectX::XMMATRIX object1Transform = object1Scale * object1Rotation * object1Translation;
 
     m_sceneobject.GetRootNode(0)->SetMatrix(object1Transform);
     m_sceneobject.GetRootNode(0)->AddTranslation({ 0, -2, 0 });
 
-    DirectX::XMVECTOR prevPos2 = DirectX::XMLoadFloat3(&sampler3.vec3_values[prevKeyframe1]);
-    DirectX::XMVECTOR nextPos2 = DirectX::XMLoadFloat3(&sampler3.vec3_values[nextKeyframe1]);
+    const int keyframeOffset = 8;
+    int nextKeyframe2 = nextKeyframe1 + keyframeOffset;
+
+    if (nextKeyframe2 >= sampler3.vec3_values.size())
+        nextKeyframe2 -= sampler3.vec3_values.size();
+
+    int prevKeyframe2 = nextKeyframe2 - 1;
+    if (prevKeyframe2 < 0)
+        prevKeyframe2 += sampler3.vec3_values.size();
+
+    DirectX::XMVECTOR prevPos2 = DirectX::XMLoadFloat3(&sampler3.vec3_values[prevKeyframe2]);
+    DirectX::XMVECTOR nextPos2 = DirectX::XMLoadFloat3(&sampler3.vec3_values[nextKeyframe2]);
     DirectX::XMVECTOR finalPos2 = DirectX::XMVectorLerp(prevPos2, nextPos2, t1);
 
-    DirectX::XMVECTOR prevRot2 = DirectX::XMLoadFloat4(&sampler4.vec4_values[prevKeyframe1]);
-    DirectX::XMVECTOR nextRot2 = DirectX::XMLoadFloat4(&sampler4.vec4_values[nextKeyframe1]);
+    DirectX::XMVECTOR prevRot2 = DirectX::XMLoadFloat4(&sampler4.vec4_values[prevKeyframe2]);
+    DirectX::XMVECTOR nextRot2 = DirectX::XMLoadFloat4(&sampler4.vec4_values[nextKeyframe2]);
     DirectX::XMVECTOR finalRot2 = DirectX::XMQuaternionSlerp(prevRot2, nextRot2, t1);
 
     DirectX::XMMATRIX object2Rotation = XMMatrixRotationQuaternion(finalRot2);
     DirectX::XMMATRIX object2Translation = DirectX::XMMatrixTranslationFromVector(finalPos2);
-
-    XMMATRIX object2Scale = XMMatrixIdentity() * XMMatrixScaling(.25f,.25f,.25f);
-
+    XMMATRIX object2Scale = XMMatrixIdentity() * XMMatrixScaling(.25f, .25f, .25f);
     DirectX::XMMATRIX object2Transform = object2Scale * object2Rotation * object2Translation;
 
     m_sceneobject.GetRootNode(1)->SetMatrix(object2Transform);
@@ -1258,8 +1291,8 @@ void Scene::update(const float deltaTime)
     m_pImmediateContext->PSSetShaderResources(0, 1, &m_pTextureDiffuse);
     m_pImmediateContext->PSSetShaderResources(1, 1, &m_pTextureMetallic);
     m_pImmediateContext->PSSetShaderResources(2, 1, &m_pTextureRoughness);
-    m_pImmediateContext->PSSetShaderResources(3, 1, &m_pTextureDiffuseIBL);
-    m_pImmediateContext->PSSetShaderResources(4, 1, &m_pTextureSpecularIBL);
+    m_pImmediateContext->PSSetShaderResources(3, 1, &m_pTextureSpecularIBL);
+    m_pImmediateContext->PSSetShaderResources(4, 1, &m_pTextureDiffuseIBL);
 
     m_pImmediateContext->PSSetSamplers(0, 1, &m_pSamplerLinear);
 

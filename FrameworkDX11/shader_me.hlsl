@@ -41,7 +41,7 @@ static const float PI = 3.14159265f; // Value of PI (used for angle calculations
 #define POINT_LIGHT 1
 #define SPOT_LIGHT 2
 
-static const float maxReflectionLod = 10;
+static const float maxReflectionLod = 5;
 
 // Struct to represent light properties
 struct Light
@@ -133,16 +133,14 @@ PS_INPUT VS(VS_INPUT input)
         finalPos = input.Pos;
         finalNorm = input.Norm;
     }
-    output.worldPos = mul(finalPos, World);
-    output.Pos = mul(finalPos, World);
+    output.Pos = mul(input.Pos, World);
+    output.worldPos = output.Pos;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
-    
-    output.Norm = mul(finalNorm, (float3x3) World);
-    output.Norm = normalize(output.Norm);
+
+    output.Norm = normalize(mul(float4(input.Norm, 0), World)).xyz;
 
     output.Tex = input.Tex;
-    
     return output;
 }
 
@@ -203,7 +201,6 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         metallic = MetallicMap.Sample(samLinear, IN.Tex).r;
         roughness = RoughnessMap.Sample(samLinear, IN.Tex).r;
     }
-    
     float3 N = normalize(IN.Norm);
     float3 V = normalize(EyePosition - IN.worldPos).xyz;
     float cosTheta = max(dot(N, V), 0.0);
@@ -233,7 +230,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         
         float3 L2 = Lights[i].Position.xyz - IN.worldPos.xyz;
         float distance = length(L2);
-        float attenuation = 1.0 / (Lights[i].ConstantAttenuation + Lights[i].LinearAttenuation * distance + Lights[i].QuadraticAttenuation * (distance * distance));
+        float attenuation = 1.0f / (Lights[i].ConstantAttenuation + Lights[i].LinearAttenuation * distance + Lights[i].QuadraticAttenuation * (distance * distance));
         Lo = Lo * (Lights[i].Color.xyz * attenuation);
         
         color = color + Lo;
@@ -271,15 +268,20 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
     }
     else if (typeIBL == 2)
     {
+        
+        //return float4(roughness, roughness, roughness, 1.0f);
+        
         float3 irradiance = iblIrradiance.Sample(samLinear, N).rgb;
-        float3 kD = (float3(1, 1, 1) - F) * (1 - metallic);
+        //irradiance = (irradiance.x / 2, irradiance.y / 2, irradiance.z / 2);
+        float3 kD = float3(1.0f, 1.0f, 1.0f) - F * (1.0f - metallic);
         float3 diffuseIBL = kD * albedo * irradiance;
 
-        float3 R = reflect(-V, N);
+        float3 R = reflect(-V, normalize(N));
         float prefilteredLod = roughness * maxReflectionLod;
         float3 prefilteredColor = iblSpecular.SampleLevel(samLinear, R, prefilteredLod).rgb;
-        float2 BRDF = IntergrateBRDF(cosTheta, roughness);
+        float2 BRDF = clamp(IntergrateBRDF(cosTheta, roughness),0.0f, 1.0f);
         float3 specularIBL = prefilteredColor * (F * BRDF.x + BRDF.y);
+        diffuseIBL *= 0.05;
         finalIBL = diffuseIBL + specularIBL;
     }
     

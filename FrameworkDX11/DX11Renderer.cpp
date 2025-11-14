@@ -689,6 +689,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
         case 5:
             break;
         case 6:
+            selectedAnim = m_pScene->m_animations[5];
             break;
         default:
             break; 
