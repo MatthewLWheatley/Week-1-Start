@@ -116,7 +116,7 @@ public:
 	DirectX::XMFLOAT4 BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& axis, float angleRadians);
 	DirectX::XMFLOAT3 BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animScale);
 	int m_animationSelected = 0;
-	bool m_animationPlaying = false;
+	bool m_animationPlaying = true;
 	bool doOnce = true;
 	Skeleton m_anim3Skeleton;
 	std::vector<SceneNode*> m_anim3SceneNodes;

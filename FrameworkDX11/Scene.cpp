@@ -583,25 +583,33 @@ void Scene::initAnimation6()
         object = nullptr;
     }
     m_objects = vector<SceneGraph*>(100);
-    if (m_animations[0])
+    if (m_animations[5])
     {
-        m_animations[0]->m_channels.clear();
-        m_animations[0]->m_name.clear();
-        m_animations[0]->m_samplers.clear();
+        m_animations[5]->m_channels.clear();
+        m_animations[5]->m_name.clear();
+        m_animations[5]->m_samplers.clear();
     }
     HRESULT hr;
+    m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\fox.gltf");
     m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\fox.gltf");
     m_sceneobject.mRootNodes[0].SetMatrix(XMMatrixIdentity());
     m_sceneobject.mRootNodes[0].AddMatrix(XMMatrixRotationY(XMConvertToRadians(225)));
     m_sceneobject.mRootNodes[0].AddTranslation({ 0, -2, -5 });
+    m_sceneobject.mRootNodes[1].SetMatrix(XMMatrixIdentity());
+    m_sceneobject.mRootNodes[1].SetMatrix(XMMatrixIdentity() * XMMatrixScaling(.25f, .25f, .25f));
+    m_sceneobject.mRootNodes[1].AddMatrix(XMMatrixRotationY(XMConvertToRadians(225)));
+    m_sceneobject.mRootNodes[1].AddTranslation({ 0, -2, -5 });
+
 
     m_objects[0] = &m_sceneobject;
 
+    AnimationSampler sampler1;
     AnimationSampler sampler2;
+    sampler1.interpolation = AnimationSampler::LINEAR;
     sampler2.interpolation = AnimationSampler::LINEAR;
 
-    float orbitRadius = 2.0f;
-    int numKeyframes = 8;
+    float orbitRadius = 3.5f;
+    int numKeyframes = 64;
     float animDuration = 4.0f;
 
     for (int i = 0; i <= numKeyframes; ++i)
@@ -609,19 +617,122 @@ void Scene::initAnimation6()
         float t = (float)i / (float)numKeyframes;
         float angle = t * XM_2PI;
         float timeStamp = t * animDuration;
-
+        
+        XMVECTOR rot;
+        rot = XMQuaternionRotationRollPitchYaw(0, XMConvertToRadians(-(360/(float)numKeyframes)*(i)),0);
+        XMFLOAT4 rot4;
+        XMStoreFloat4(&rot4, rot);
         sampler2.timestamps.push_back(timeStamp);
-        sampler2.vec3_values.push_back(XMFLOAT3(
-            cos(angle) * orbitRadius,
+        sampler2.vec4_values.push_back(rot4);
+        
+        sampler1.timestamps.push_back(timeStamp);
+        sampler1.vec3_values.push_back(XMFLOAT3(
+            cos(angle) * orbitRadius - orbitRadius,
+            0.0f,
+            sin(angle) * orbitRadius
+        )
+        );
+    }
+    for (int i = 0; i <= numKeyframes; ++i)
+    {
+        float t = (float)i / (float)numKeyframes;
+        float angle = t * XM_2PI;
+        float timeStamp = t * animDuration;
+
+        XMVECTOR rot;
+        rot = XMQuaternionRotationRollPitchYaw(0, XMConvertToRadians((360 / (float)numKeyframes) * (i)), 0);
+        XMFLOAT4 rot4;
+        XMStoreFloat4(&rot4, rot);
+        sampler2.timestamps.push_back(timeStamp + animDuration);
+        sampler2.vec4_values.push_back(rot4);
+
+        sampler1.timestamps.push_back(timeStamp + animDuration);
+        sampler1.vec3_values.push_back(XMFLOAT3(
+            -cos(angle) * orbitRadius + orbitRadius,
             0.0f,
             sin(angle) * orbitRadius
         ));
     }
 
 
-    m_myAnimation6.m_samplers.push_back(sampler2);
+    m_myAnimation6.m_samplers.push_back(sampler1);
 
     m_myAnimation6.m_samplers.push_back(sampler2);
+
+    AnimationSampler sampler3;
+    AnimationSampler sampler4;
+    sampler3.interpolation = AnimationSampler::LINEAR;
+    sampler4.interpolation = AnimationSampler::LINEAR;
+
+
+    for (int i = numKeyframes/2; i <= numKeyframes; ++i)
+    {
+        float t = (float)i / (float)numKeyframes - 2;
+        float angle = t * XM_2PI;
+        float timeStamp = t * animDuration;
+
+        XMVECTOR rot;
+        rot = XMQuaternionRotationRollPitchYaw(0, XMConvertToRadians(-(360 / (float)numKeyframes) * (i)), 0);
+        XMFLOAT4 rot4;
+        XMStoreFloat4(&rot4, rot);
+        sampler3.timestamps.push_back(timeStamp);
+        sampler3.vec4_values.push_back(rot4);
+
+        sampler4.timestamps.push_back(timeStamp);
+        sampler4.vec3_values.push_back(XMFLOAT3(
+            cos(angle) * orbitRadius - orbitRadius,
+            0.0f,
+            sin(angle) * orbitRadius
+        )
+        );
+    }
+    for (int i = 0; i <= numKeyframes; ++i)
+    {
+        float t = (float)i / (float)numKeyframes;
+        float angle = t * XM_2PI;
+        float timeStamp = t * animDuration;
+
+        XMVECTOR rot;
+        rot = XMQuaternionRotationRollPitchYaw(0, XMConvertToRadians((360 / (float)numKeyframes) * (i)), 0);
+        XMFLOAT4 rot4;
+        XMStoreFloat4(&rot4, rot);
+        sampler3.timestamps.push_back(timeStamp + animDuration);
+        sampler3.vec4_values.push_back(rot4);
+
+        sampler4.timestamps.push_back(timeStamp + animDuration);
+        sampler4.vec3_values.push_back(XMFLOAT3(
+            -cos(angle) * orbitRadius + orbitRadius,
+            0.0f,
+            sin(angle) * orbitRadius
+        ));
+    }
+    for (int i = 0; i <= numKeyframes/2; ++i)
+    {
+        float t = (float)i / (float)numKeyframes + 6;
+        float angle = t * XM_2PI;
+        float timeStamp = t * animDuration;
+
+        XMVECTOR rot;
+        rot = XMQuaternionRotationRollPitchYaw(0, XMConvertToRadians(-(360 / (float)numKeyframes) * (i)), 0);
+        XMFLOAT4 rot4;
+        XMStoreFloat4(&rot4, rot);
+        sampler3.timestamps.push_back(timeStamp);
+        sampler3.vec4_values.push_back(rot4);
+
+        sampler4.timestamps.push_back(timeStamp);
+        sampler4.vec3_values.push_back(XMFLOAT3(
+            cos(angle) * orbitRadius - orbitRadius,
+            0.0f,
+            sin(angle) * orbitRadius
+        )
+        );
+    }
+
+    m_myAnimation6.m_samplers.push_back(sampler1);
+    m_myAnimation6.m_samplers.push_back(sampler2);
+    m_myAnimation6.m_samplers.push_back(sampler3);
+    m_myAnimation6.m_samplers.push_back(sampler4);
+
 
     m_animations[5] = &m_myAnimation6;
     m_animationTimers[5] = 0.0f;
@@ -999,19 +1110,70 @@ void Scene::animation5(const float deltaTime)
 void Scene::animation6(const float deltaTime) 
 {
     AnimationSampler sampler1 = m_animations[5]->m_samplers[0];
+    AnimationSampler sampler2 = m_animations[5]->m_samplers[1];
+    AnimationSampler sampler3 = m_animations[5]->m_samplers[2];
+    AnimationSampler sampler4 = m_animations[5]->m_samplers[3];
     float* animationTimer = &m_animationTimers[5];
 
-    if (*animationTimer >= sampler1.timestamps.back())
-        *animationTimer = 0; if (m_animationPlaying) *animationTimer += deltaTime;
+    if (m_animationTimers[5] >= sampler1.timestamps.back())
+        m_animationTimers[5] = 0; 
+    if (m_animationPlaying) m_animationTimers[5] += deltaTime;
     int nextKeyframe1 = -1;
     for (int i = 0; i < sampler1.timestamps.size(); ++i)
     {
-        if (sampler1.timestamps[i] > *animationTimer)
+        if (sampler1.timestamps[i] > m_animationTimers[5])
         {
             nextKeyframe1 = i;
             break;
         }
     }
+
+    if (nextKeyframe1 == -1 || nextKeyframe1 == 0)
+        nextKeyframe1 = 1;
+
+    int prevKeyframe1 = nextKeyframe1 - 1;
+    float prevTime1 = sampler1.timestamps[prevKeyframe1];
+    float nextTime1 = sampler1.timestamps[nextKeyframe1];
+    float t1 = (m_animationTimers[5] - prevTime1) / (nextTime1 - prevTime1);
+
+    DirectX::XMVECTOR prevPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextPos1 = DirectX::XMLoadFloat3(&sampler1.vec3_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalPos1 = DirectX::XMVectorLerp(prevPos1, nextPos1, t1);
+
+    DirectX::XMVECTOR prevRot1 = DirectX::XMLoadFloat4(&sampler2.vec4_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextRot1 = DirectX::XMLoadFloat4(&sampler2.vec4_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalRot1 = DirectX::XMQuaternionSlerp(prevRot1, nextRot1, t1);
+
+    DirectX::XMMATRIX object1Rotation = XMMatrixRotationQuaternion(finalRot1);
+    DirectX::XMMATRIX object1Translation = DirectX::XMMatrixTranslationFromVector(finalPos1);
+
+    XMMATRIX object1Scale = XMMatrixIdentity();
+
+    DirectX::XMMATRIX object1Transform = object1Scale * object1Rotation * object1Translation;
+
+    m_sceneobject.GetRootNode(0)->SetMatrix(object1Transform);
+    m_sceneobject.GetRootNode(0)->AddTranslation({ 0, -2, 0 });
+
+    DirectX::XMVECTOR prevPos2 = DirectX::XMLoadFloat3(&sampler3.vec3_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextPos2 = DirectX::XMLoadFloat3(&sampler3.vec3_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalPos2 = DirectX::XMVectorLerp(prevPos2, nextPos2, t1);
+
+    DirectX::XMVECTOR prevRot2 = DirectX::XMLoadFloat4(&sampler4.vec4_values[prevKeyframe1]);
+    DirectX::XMVECTOR nextRot2 = DirectX::XMLoadFloat4(&sampler4.vec4_values[nextKeyframe1]);
+    DirectX::XMVECTOR finalRot2 = DirectX::XMQuaternionSlerp(prevRot2, nextRot2, t1);
+
+    DirectX::XMMATRIX object2Rotation = XMMatrixRotationQuaternion(finalRot2);
+    DirectX::XMMATRIX object2Translation = DirectX::XMMatrixTranslationFromVector(finalPos2);
+
+    XMMATRIX object2Scale = XMMatrixIdentity() * XMMatrixScaling(.25f,.25f,.25f);
+
+    DirectX::XMMATRIX object2Transform = object2Scale * object2Rotation * object2Translation;
+
+    m_sceneobject.GetRootNode(1)->SetMatrix(object2Transform);
+    m_sceneobject.GetRootNode(1)->AddTranslation({ 0, -2, 0 });
+
+    if (m_animationTimers[5] < -0.01)
+        m_animationTimers[5] = sampler1.timestamps.back();
 }
 
 DirectX::XMFLOAT3 Scene::BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation)
