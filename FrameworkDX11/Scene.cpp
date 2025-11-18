@@ -57,12 +57,12 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     if (FAILED(hr))
         return hr;  // If buffer creation fails, return the error
 
-    //// Load texture resources
+    ////// Load texture resources
     //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
     //if (FAILED(hr)) m_pTextureDiffuse = nullptr;
     //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_metal.dds", nullptr, &m_pTextureMetallic);
     //if (FAILED(hr)) m_pTextureMetallic = nullptr;
-    ////hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
     //if (FAILED(hr))m_pTextureRoughness = nullptr; 
     //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
     //if (FAILED(hr)) m_pTextureDiffuse = nullptr;
@@ -76,12 +76,12 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     if (FAILED(hr)) return hr;
     hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete044D_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
     if (FAILED(hr)) return hr;/*
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
-    if (FAILED(hr)) m_pTextureDiffuse = nullptr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
-    if (FAILED(hr)) m_pTextureMetallic = nullptr;
-    hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
-    if (FAILED(hr))m_pTextureRoughness = nullptr;*/
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
+    //if (FAILED(hr)) m_pTextureDiffuse = nullptr;
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
+    //if (FAILED(hr)) m_pTextureMetallic = nullptr;
+    //hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+    //if (FAILED(hr))m_pTextureRoughness = nullptr;*/
 
     /*hr = CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\scratched-metal_albedo.dds", nullptr, &m_pTextureDiffuse);
     if (FAILED(hr)) m_pTextureDiffuse = nullptr;

@@ -133,7 +133,9 @@ PS_INPUT VS(VS_INPUT input)
         finalPos = input.Pos;
         finalNorm = input.Norm;
     }
-    output.Pos = mul(input.Pos, World);
+    
+    output.Pos = mul(finalPos, World);
+    output.Norm = normalize(finalNorm);
     output.worldPos = output.Pos;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
@@ -152,7 +154,8 @@ float3 FresnelSchlick(float cosTheta, float3 F0)
 float NormalDistrobution(float roughness, float3 N, float3 H)
 {
     float NdotH = max(dot(N, H), 0.0);
-    float a2 = roughness * roughness;
+    float a = roughness * roughness;
+    float a2 = a*a;
     float denom = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
     return a2 / (PI * (denom * denom));
 }
@@ -201,6 +204,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         metallic = MetallicMap.Sample(samLinear, IN.Tex).r;
         roughness = RoughnessMap.Sample(samLinear, IN.Tex).r;
     }
+    roughness = max(roughness, 0.001f);
     float3 N = normalize(IN.Norm);
     float3 V = normalize(EyePosition - IN.worldPos).xyz;
     float cosTheta = max(dot(N, V), 0.0);
@@ -231,7 +235,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         float3 L2 = Lights[i].Position.xyz - IN.worldPos.xyz;
         float distance = length(L2);
         float attenuation = 1.0f / (Lights[i].ConstantAttenuation + Lights[i].LinearAttenuation * distance + Lights[i].QuadraticAttenuation * (distance * distance));
-        Lo = Lo * (Lights[i].Color.xyz * attenuation);
+        Lo = Lo * (Lights[i].Color.xyz);
         
         color = color + Lo;
     }
@@ -272,7 +276,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         //return float4(roughness, roughness, roughness, 1.0f);
         
         float3 irradiance = iblIrradiance.Sample(samLinear, N).rgb;
-        //irradiance = (irradiance.x / 2, irradiance.y / 2, irradiance.z / 2);
+        irradiance = (irradiance.x / 2, irradiance.y / 2, irradiance.z / 2);
         float3 kD = float3(1.0f, 1.0f, 1.0f) - F * (1.0f - metallic);
         float3 diffuseIBL = kD * albedo * irradiance;
 
@@ -281,7 +285,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         float3 prefilteredColor = iblSpecular.SampleLevel(samLinear, R, prefilteredLod).rgb;
         float2 BRDF = clamp(IntergrateBRDF(cosTheta, roughness),0.0f, 1.0f);
         float3 specularIBL = prefilteredColor * (F * BRDF.x + BRDF.y);
-        diffuseIBL *= 0.05;
+        //diffuseIBL *= 0.05; // i know this is wrong but it was way to bright
         finalIBL = diffuseIBL + specularIBL;
     }
     
@@ -289,7 +293,3 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
     return float4(finalIBL + color, 1);
 }
 
-float4 PSSolid(PS_INPUT input) : SV_Target
-{
-    return vOutputColor2; // Return the solid color (set in constant buffer)
-}
