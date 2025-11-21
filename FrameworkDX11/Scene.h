@@ -34,11 +34,17 @@ public:
 	~Scene() {}
 
 	HRESULT		init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, DX11Renderer* renderer);
+
+	void SwapTextures(int id);
+
+	void initPBRScene();
 	
 	void		cleanUp();
 	Camera*		getCamera() { return m_pCamera; }
 
 	void setLightPos(int lightIndex, XMFLOAT4 pos);
+
+	void PRBScene();
 
 
 	void		update(const float deltaTime);
@@ -66,6 +72,8 @@ public:
 	void initAnimation4();
 	void initAnimation5();
 	void initAnimation6();
+
+	void initAnimation7();
 
 	void CreateWaveAnimationSampler1(int nodeIndex, Animation* anim, Skeleton* skel);
 
@@ -112,6 +120,7 @@ public:
 	void animation4(const float deltaTime);
 	void animation5(const float deltaTime);
 	void animation6(const float deltaTime);
+	void animation7(const float deltaTime);
 	DirectX::XMFLOAT3 BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation);
 	DirectX::XMFLOAT4 BakeRotationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& axis, float angleRadians);
 	DirectX::XMFLOAT3 BakeScaleOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animScale);

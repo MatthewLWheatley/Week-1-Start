@@ -16,6 +16,7 @@ void Skeleton::PlayAnimation(const unsigned int animation)
     if (animation >= GetAnimationCount())
         return;
 
+    m_blendAnimation = nullptr;
     m_pCurrentAnimation = &m_animations[animation];
     m_currentAnimationTime = m_pCurrentAnimation->GetStartTime();
     m_playingAnimation = animation;
@@ -23,8 +24,16 @@ void Skeleton::PlayAnimation(const unsigned int animation)
 
 void Skeleton::PlayAnimation(Animation* anim)
 {
+    m_blendAnimation = nullptr;
     m_pCurrentAnimation = anim;
     m_currentAnimationTime = anim->GetStartTime();
+}
+
+void Skeleton::PlayBlend(BlendNode* blend) 
+{
+    m_blendAnimation = blend;
+    m_pCurrentAnimation = nullptr;
+    m_currentAnimationTime = blend->m_startTimes[0];
 }
 
 int Skeleton::AddJoint(int parentIndex, const DirectX::XMFLOAT4X4& localBindTransform)
@@ -183,14 +192,19 @@ void Skeleton::Update(float deltaTime)
 
     //m_currentAnimationTime = 0.5f; // useful for testing
 
-    for (int rootIndex : m_rootJointIndices) {
-        UpdateJointTransform(rootIndex, m_pCurrentAnimation, m_currentAnimationTime, rootTransform);
+    if (m_pCurrentAnimation) {
+        for (int rootIndex : m_rootJointIndices) {
+            UpdateJointTransform(rootIndex, m_pCurrentAnimation, m_currentAnimationTime, rootTransform);
+        }
+        for (size_t i = 0; i < m_joints.size(); ++i) {
+            XMMATRIX inv = XMLoadFloat4x4(&m_joints[i].inverseBindMatrix);
+            XMMATRIX finalTransform = XMLoadFloat4x4(&m_joints[i].finalTransform);
+            XMMATRIX out = inv * finalTransform;
+            XMStoreFloat4x4(&m_skinningMatrices[i], out);
+        }
     }
-    for (size_t i = 0; i < m_joints.size(); ++i) {
-        XMMATRIX inv = XMLoadFloat4x4(&m_joints[i].inverseBindMatrix);
-        XMMATRIX finalTransform = XMLoadFloat4x4(&m_joints[i].finalTransform);
-        XMMATRIX out = inv * finalTransform;
-        XMStoreFloat4x4(&m_skinningMatrices[i], out);
+    else if (m_blendAnimation) 
+    {
     }
 }
 

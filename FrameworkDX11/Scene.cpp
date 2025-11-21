@@ -128,6 +128,66 @@ HRESULT Scene::init(HWND hwnd, const Microsoft::WRL::ComPtr<ID3D11Device>& devic
     return S_OK;  // Return success
 }
 
+void Scene::SwapTextures(int id) 
+{
+    switch (id)
+    {
+    case 1:
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete044D_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete044D_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Concrete044D_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+        break;
+    case 2:
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_diff.dds", nullptr, &m_pTextureDiffuse);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_metal.dds", nullptr, &m_pTextureMetallic);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\rusty_metal_04_rough.dds", nullptr, &m_pTextureRoughness);
+        break;
+    case 3:
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+        break;
+    case 4:
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+        break;
+    default:
+        break;
+    }
+}
+
+void Scene::initPBRScene() 
+{
+    for (SceneGraph* object : m_objects)
+    {
+        if (object) object->Destroy();
+        object = nullptr;
+    }
+    m_objects = vector<SceneGraph*>(100);
+    m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\FlightHelmet.gltf");
+    m_sceneobject2.LoadGLTFWithSkeleton(m_ctx, L"Resources\\Sphere.gltf");
+    m_sceneobject3.LoadGLTFWithSkeleton(m_ctx, L"Resources\\Sphere.gltf");
+    m_sceneobject.SetMatrixToRoots(XMMatrixScaling(5, 5, 5));
+    m_sceneobject2.SetMatrixToRoots(XMMatrixIdentity());
+    m_sceneobject3.SetMatrixToRoots(XMMatrixIdentity());
+    m_objects[0] = &m_sceneobject;
+    m_objects[1] = &m_sceneobject2;
+    m_objects[2] = &m_sceneobject3;
+
+    XMFLOAT4 pos = { 3,0,0,1 };
+    XMMATRIX lightPos = XMMatrixTranslation(pos.x, pos.y, pos.z);
+    XMMATRIX lightScale = XMMatrixScaling(0.2, 0.2, 0.2);
+    XMMATRIX out = lightScale * lightPos;
+    m_sceneobject2.SetMatrixToRoots(out);
+
+    XMFLOAT4 pos2 = m_lightProperties.Lights[1].Position;
+    XMMATRIX lightPos2 = XMMatrixTranslation(pos2.x, pos2.y, pos2.z);
+    XMMATRIX lightScale2 = XMMatrixScaling(0.2, 0.2, 0.2);
+    XMMATRIX out2 = lightScale2 * lightPos2;
+    m_sceneobject3.SetMatrixToRoots(out);
+}
+
 void Scene::initAnimation1() 
 {
     m_sceneobject.Destroy();
@@ -763,6 +823,22 @@ void Scene::initAnimation6()
     m_animationTimers[5] = 0.0f;
 }
 
+void Scene::initAnimation7()
+{
+    for (SceneGraph* object : m_objects)
+    {
+        if (object) object->Destroy();
+        object = nullptr;
+    }
+    m_objects = vector<SceneGraph*>(100);
+    m_sceneobject.LoadGLTFWithSkeleton(m_ctx, L"Resources\\fox.gltf");
+    m_sceneobject.mRootNodes[0].SetMatrix(XMMatrixIdentity());
+    m_sceneobject.mRootNodes[0].AddMatrix(XMMatrixRotationY(XMConvertToRadians(180)));
+    m_sceneobject.mRootNodes[0].AddTranslation({ 0, -2, -1 });
+
+    m_objects[0] = &m_sceneobject;
+}
+
 void Scene::CreateWaveAnimationSampler1(int nodeIndex, Animation* anim, Skeleton* skel)
 {
     // Samplers for the hand's translation and rotation.
@@ -911,6 +987,34 @@ void Scene::setLightPos(int lightIndex, XMFLOAT4 pos)
     if (lightIndex >= 0 && lightIndex < MAX_LIGHTS) 
     {
 		m_lightProperties.Lights[lightIndex].Position = pos;
+    }
+}
+
+void Scene::PRBScene()
+{
+    XMFLOAT4 pos = m_lightProperties.Lights[0].Position;
+    XMMATRIX lightPos = XMMatrixTranslation(pos.x, pos.y, pos.z);
+    XMMATRIX lightScale = XMMatrixScaling(0.2, 0.2, 0.2);
+    XMMATRIX out = lightScale * lightPos;
+    m_sceneobject2.SetMatrixToRoots(out);
+
+    if (m_lightProperties.Lights[1].Enabled)
+    {
+
+        XMFLOAT4 pos2 = m_lightProperties.Lights[1].Position;
+        XMMATRIX lightPos2 = XMMatrixTranslation(pos2.x, pos2.y, pos2.z);
+        XMMATRIX lightScale2 = XMMatrixScaling(0.2, 0.2, 0.2);
+        XMMATRIX out2 = lightScale2 * lightPos2;
+        m_sceneobject3.SetMatrixToRoots(out);
+    }
+    else
+    {
+
+        XMFLOAT4 pos2 = {1000,1000,1000,1};
+        XMMATRIX lightPos2 = XMMatrixTranslation(pos2.x, pos2.y, pos2.z);
+        XMMATRIX lightScale2 = XMMatrixScaling(0.2, 0.2, 0.2);
+        XMMATRIX out2 = lightScale2 * lightPos2;
+        m_sceneobject3.SetMatrixToRoots(out);
     }
 }
 
@@ -1209,6 +1313,11 @@ void Scene::animation6(const float deltaTime)
         m_animationTimers[5] = sampler1.timestamps.back();
 }
 
+void Scene::animation7(const float deltaTime) 
+{
+    
+}
+
 DirectX::XMFLOAT3 Scene::BakeTranslationOntoBindPose(const DirectX::XMMATRIX& bindPose, const DirectX::XMFLOAT3& animTranslation)
 {
     // 1. Create the animation matrix from the vector.
@@ -1279,6 +1388,8 @@ void Scene::update(const float deltaTime)
     case 6:
         animation6(deltaTime);
         break;
+    case 7:
+        PRBScene();
     }
 
 

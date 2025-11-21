@@ -70,6 +70,9 @@
     <ClCompile Include="Skeleton.cpp">
       <Filter>Animation</Filter>
     </ClCompile>
+    <ClCompile Include="Blend.cpp">
+      <Filter>Animation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imgui_impl_win32.h">
@@ -166,6 +169,9 @@
       <Filter>Animation</Filter>
     </ClInclude>
     <ClInclude Include="Skeleton.h">
+      <Filter>Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Blend.h">
       <Filter>Animation</Filter>
     </ClInclude>
   </ItemGroup>

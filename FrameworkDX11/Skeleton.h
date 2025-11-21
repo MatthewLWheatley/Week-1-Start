@@ -6,6 +6,7 @@
 #include "tiny_gltf.h"
 
 #include "Animation.h"
+#include "Blend.h"
 
 struct Joint
 {
@@ -47,6 +48,7 @@ public:
     unsigned int GetAnimationCount() { return m_animationCount; }
     void PlayAnimation(const unsigned int animation);
     void PlayAnimation(Animation* anim);
+    void PlayBlend(BlendNode* blend);
     bool IsLoaded() { return m_isLoaded; }
     Animation* CurrentAnimation() { return m_pCurrentAnimation; }
 
@@ -71,15 +73,15 @@ public:
         m_animationCount = m_animations.size();
     }
 
+    Animation* GetAnimation(int id) { return &m_animations[id]; }
+    float m_currentAnimationTime;
 
+    friend class BlendNode;
 private:
-    // Change the signature to accept a pointer.
     void UpdateJointTransform(int jointIndex, const Animation* anim, float time, const DirectX::XMMATRIX& parentTransform);
 
-    // The flat list of all joints that make up this skeleton.
     std::vector<Joint> m_joints;
 
-    // A list of indices for the root joints (those without a parent in the skeleton).
     std::vector<int> m_rootJointIndices;
 
     // The final matrices sent to the shader, calculated by multiplying the
@@ -91,8 +93,9 @@ private:
     unsigned int            m_animationCount;
     std::vector<Animation>  m_animations;
     Animation* m_pCurrentAnimation;
-    float                   m_currentAnimationTime;
     bool                    m_isLoaded = false;
+
+    BlendNode* m_blendAnimation;
 };
 
 
