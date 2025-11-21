@@ -13,6 +13,7 @@ constexpr bool PBR_MODE = TRUE;
 #pragma region Class lifetime
 
 HRESULT DX11Renderer::init(HWND hwnd)
+
 {
     initDevice(hwnd);
 
@@ -845,12 +846,12 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
                 {
                     Skeleton* skel = node.GetSkeleton();
                     vector<string> anims = {};
+                    for (int z = 0; z < skel->GetAnimationCount(); z++)
+                    {
+                        anims.push_back(skel->GetAnimationName(z));
+                    }
                     if (skel->m_playingAnimation != -1) 
                     {
-                        for (int z = 0; z < skel->GetAnimationCount(); z++)
-                        {
-                            anims.push_back(skel->GetAnimationName(z));
-                        }
 
                         int current = skel->m_playingAnimation;
                         int old = current;
@@ -890,7 +891,7 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
                             skel->Update(deltaTime);
                             if (tempBool) skel->m_AnimationState = !skel->m_AnimationState;
                         }
-                        if (ImGui::TreeNode("Blend out"))
+                        if (ImGui::TreeNode("Blend Together"))
                         {
                             if (anims.size() > 1) {
                                 string selected = anims[current];
@@ -922,11 +923,67 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
                     else 
                     {
                         BlendNode* blend = skel->CurrentBlend();
-                        if (skel->CurrentBlend()->type == skel->CurrentBlend()->BLENDTOGETHER) 
+                        static int selectedToAdd = 0;
+                        if (ImGui::BeginCombo("##AddAnim", anims[selectedToAdd].c_str()))
                         {
-                            
+                            for (int n = 0; n < anims.size(); n++)
+                            {
+                                bool isSelected = (selectedToAdd == n);
+                                if (ImGui::Selectable((std::to_string(n) + ": " + anims[n]).c_str(), isSelected))
+                                {
+                                    selectedToAdd = n;
+                                }
+                                if (isSelected)
+                                    ImGui::SetItemDefaultFocus();
+                            }
+                            ImGui::EndCombo();
                         }
 
+                        ImGui::SameLine();
+                        if (ImGui::Button("Add to Blend"))
+                        {
+                            bool alreadyExists = false;
+                            for (const auto& name : blend->m_names)
+                            {
+                                if (name == anims[selectedToAdd])
+                                {
+                                    alreadyExists = true;
+                                    break;
+                                }
+                            }
+
+                            if (!alreadyExists)
+                            {
+                                blend->AddAnime(skel->GetAnimation(selectedToAdd), anims[selectedToAdd]);
+                            }
+                        }
+
+                        if (blend->type == blend->BLENDTOGETHER)
+                        {
+                            if (ImGui::Button("Play All")) for (int i = 0; i < blend->m_names.size(); i++) blend->m_playStates[i] = true;
+                            if (ImGui::Button("Pause All")) for (int i = 0; i < blend->m_names.size(); i++) blend->m_playStates[i] = false;
+                            for (int aniID = 0; aniID < blend->m_names.size(); aniID++)
+                            {
+                                std::string name = blend->m_names[aniID];
+                                if(ImGui::TreeNode(name.c_str()))
+                                {
+                                    if(blend->m_names.size() > 1)
+                                        if (ImGui::Button(("Remove from Blend##" + std::to_string(aniID)).c_str()))
+                                        {
+                                            blend->RemoveAnime(selectedToAdd);
+                                        }
+                                    if (ImGui::RadioButton("Play/Pause", blend->m_playStates[aniID])) blend->m_playStates[aniID] = !blend->m_playStates[aniID];
+                                    if (ImGui::SliderFloat("CurrentTime", &blend->m_currentTimes[aniID], blend->m_startTimes[aniID], blend->m_endTimes[aniID]) && blend->m_playStates[aniID])
+                                    {
+                                        blend->m_playStates[aniID] = true;
+                                        skel->Update(deltaTime);
+                                        blend->m_playStates[aniID] = false;
+                                    }
+                                    ImGui::SliderFloat("Weight percent", &blend->m_weights[aniID], 0.0f, 1.0f);
+                                    ImGui::TreePop();
+                                }
+                            }
+                        }
                     }
                     
                     ImGui::TreePop();

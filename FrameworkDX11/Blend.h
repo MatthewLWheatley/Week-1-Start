@@ -18,6 +18,8 @@ public:
 	std::vector<float> m_startTimes;
 	std::vector<float> m_endTimes;
 	std::vector<std::string> m_names;
+	std::vector<bool> m_playStates;
+	std::vector<float> m_weights;
 	Skeleton* skelParent;
 
 	enum BLENDTYPE
@@ -42,6 +44,10 @@ public:
 		m_names.push_back(ani2.m_name);
 		m_currentTimes.push_back(0.0f);
 		m_currentTimes.push_back(0.0f);
+		m_playStates.push_back(true);
+		m_playStates.push_back(true);
+		m_weights.push_back(1.0f);
+		m_weights.push_back(1.0f);
 	}
 
 	BlendNode(BlendNode blend1, Animation ani2)
@@ -73,7 +79,12 @@ public:
 		m_endTimes.push_back(ani2.GetEndTime());
 		m_names.push_back(ani2.m_name);
 		m_currentTimes.push_back(0.0f);
+		m_playStates.push_back(true);
+		m_weights.push_back(1.0f);
 	}
+
+	void AddAnime(Animation* anime, std::string name);
+	void RemoveAnime(int ID);
 
 	void Update(float deltaTime); 
 	void SampleJointTransformRecursive(int jointIndex, const Animation* anim, float time, const DirectX::XMMATRIX& parentTransform, std::vector<DirectX::XMMATRIX>& outTransforms);

@@ -175,18 +175,20 @@ void Scene::initPBRScene()
     m_sceneobject2.LoadGLTFWithSkeleton(m_ctx, L"Resources\\Sphere.gltf");
     m_sceneobject3.LoadGLTFWithSkeleton(m_ctx, L"Resources\\Sphere.gltf");
     m_sceneobject.SetMatrixToRoots(XMMatrixScaling(5, 5, 5));
+    m_sceneobject.AddMatrixToRoots(XMMatrixRotationY(XMConvertToRadians(180)));
     m_sceneobject2.SetMatrixToRoots(XMMatrixIdentity());
     m_sceneobject3.SetMatrixToRoots(XMMatrixIdentity());
     m_objects[0] = &m_sceneobject;
     m_objects[1] = &m_sceneobject2;
     m_objects[2] = &m_sceneobject3;
 
-    XMFLOAT4 pos = { 3,0,0,1 };
+    m_lightProperties.Lights[0].Position = { 3,3,-2,1 };
+    XMFLOAT4 pos = m_lightProperties.Lights[0].Position;
     XMMATRIX lightPos = XMMatrixTranslation(pos.x, pos.y, pos.z);
     XMMATRIX lightScale = XMMatrixScaling(0.2, 0.2, 0.2);
     XMMATRIX out = lightScale * lightPos;
     m_sceneobject2.SetMatrixToRoots(out);
-
+    m_lightProperties.Lights[1].Position = { -3,3,-2,1 };
     XMFLOAT4 pos2 = m_lightProperties.Lights[1].Position;
     XMMATRIX lightPos2 = XMMatrixTranslation(pos2.x, pos2.y, pos2.z);
     XMMATRIX lightScale2 = XMMatrixScaling(0.2, 0.2, 0.2);
@@ -1003,19 +1005,14 @@ void Scene::PRBScene()
     XMMATRIX lightScale = XMMatrixScaling(0.2, 0.2, 0.2);
     XMMATRIX out = lightScale * lightPos;
     m_sceneobject2.SetMatrixToRoots(out);
+    XMFLOAT4 pos2 = m_lightProperties.Lights[1].Position;
+    XMMATRIX lightPos2 = XMMatrixTranslation(pos2.x, pos2.y, pos2.z);
+    XMMATRIX lightScale2 = XMMatrixScaling(0.2, 0.2, 0.2);
+    XMMATRIX out2 = lightScale2 * lightPos2;
+    m_sceneobject3.SetMatrixToRoots(out2);
 
-    if (m_lightProperties.Lights[1].Enabled)
+    if (!m_lightProperties.Lights[1].Enabled)
     {
-
-        XMFLOAT4 pos2 = m_lightProperties.Lights[1].Position;
-        XMMATRIX lightPos2 = XMMatrixTranslation(pos2.x, pos2.y, pos2.z);
-        XMMATRIX lightScale2 = XMMatrixScaling(0.2, 0.2, 0.2);
-        XMMATRIX out2 = lightScale2 * lightPos2;
-        m_sceneobject3.SetMatrixToRoots(out);
-    }
-    else
-    {
-
         XMFLOAT4 pos2 = {1000,1000,1000,1};
         XMMATRIX lightPos2 = XMMatrixTranslation(pos2.x, pos2.y, pos2.z);
         XMMATRIX lightScale2 = XMMatrixScaling(0.2, 0.2, 0.2);
