@@ -750,8 +750,13 @@ void SceneGraph::RenderNode(IRenderingContext& ctx,
     ConstantBufferSwitch* data = &ctx.getDXRenderer()->m_ConstantBufferDataSwitch;
     if (node.m_skeleton.IsLoaded())
     {
-        if (node.m_skeleton.CurrentAnimation() == nullptr)
-            node.m_skeleton.PlayAnimation(0u);
+        BlendNode* blend = node.m_skeleton.CurrentBlend();
+        Animation* anim = node.m_skeleton.CurrentAnimation();
+        if (anim == nullptr)
+            if(blend == nullptr)
+                node.m_skeleton.PlayAnimation(0u);
+
+        
         node.m_skeleton.Update(deltaTime);
         const unsigned int max_bones = 100;
         node.m_skeleton.GetSkinningMatrices(data->boneTransforms, max_bones);

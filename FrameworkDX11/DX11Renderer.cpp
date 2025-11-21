@@ -844,53 +844,16 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
                 if (ImGui::TreeNode("Fox"))
                 {
                     Skeleton* skel = node.GetSkeleton();
-
                     vector<string> anims = {};
-                    for (int z = 0; z < skel->GetAnimationCount(); z++)
+                    if (skel->m_playingAnimation != -1) 
                     {
-                        anims.push_back(skel->GetAnimationName(z));
-                    }
-                    int current = skel->m_playingAnimation;
-                    int old = current;
-                    if (anims.size() > 1) {
-                        string selected = anims[current];
-                        if (ImGui::BeginCombo(("Animations " + std::to_string(current)).c_str(), anims[current].c_str()))
+                        for (int z = 0; z < skel->GetAnimationCount(); z++)
                         {
-                            for (int n = 0; n < anims.size(); n++)
-                            {
-                                bool isSelected = (anims[n] == selected);
-                                if (ImGui::Selectable((std::to_string(n) + " :" + anims[n]).c_str(), isSelected))
-                                {
-                                    current = n;
-                                    selected = anims[n];
-                                }
-                                if (isSelected)
-                                    ImGui::SetItemDefaultFocus();
-                            }
-                            ImGui::EndCombo();
+                            anims.push_back(skel->GetAnimationName(z));
                         }
-                        if (current != old) skel->PlayAnimation(current);
-                    }
-                    if (ImGui::Button("Play/Pause"))
-                    {
-                        skel->m_AnimationState = !skel->m_AnimationState;
-                    }
-                    Animation* CurrentAnimation = skel->GetAnimation(current);
-                    float maxtime = CurrentAnimation->GetEndTime();
-                    if (ImGui::SliderFloat("Timer ", &skel->m_currentAnimationTime, 0.0f, maxtime)) 
-                    {
-                        bool tempBool = false;
-                        if (!skel->m_AnimationState)
-                        {
-                            tempBool = true;
-                            skel->m_AnimationState = true;
-                        }
-                        skel->Update(deltaTime);
-                        if(tempBool) skel->m_AnimationState = !skel->m_AnimationState;
-                    }
 
-                    if (ImGui::TreeNode("Blend out")) 
-                    {
+                        int current = skel->m_playingAnimation;
+                        int old = current;
                         if (anims.size() > 1) {
                             string selected = anims[current];
                             if (ImGui::BeginCombo(("Animations " + std::to_string(current)).c_str(), anims[current].c_str()))
@@ -907,16 +870,61 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
                                         ImGui::SetItemDefaultFocus();
                                 }
                                 ImGui::EndCombo();
-
-
                             }
-                            if (current != old) 
-                            {
-                                
-                            }
+                            if (current != old) skel->PlayAnimation(current);
                         }
-                        ImGui::TreePop();
+                        if (ImGui::Button("Play/Pause"))
+                        {
+                            skel->m_AnimationState = !skel->m_AnimationState;
+                        }
+                        Animation* CurrentAnimation = skel->GetAnimation(current);
+                        float maxtime = CurrentAnimation->GetEndTime();
+                        if (ImGui::SliderFloat("Timer ", &skel->m_currentAnimationTime, 0.0f, maxtime))
+                        {
+                            bool tempBool = false;
+                            if (!skel->m_AnimationState)
+                            {
+                                tempBool = true;
+                                skel->m_AnimationState = true;
+                            }
+                            skel->Update(deltaTime);
+                            if (tempBool) skel->m_AnimationState = !skel->m_AnimationState;
+                        }
+                        if (ImGui::TreeNode("Blend out"))
+                        {
+                            if (anims.size() > 1) {
+                                string selected = anims[current];
+                                if (ImGui::BeginCombo(("Animations " + std::to_string(current)).c_str(), anims[current].c_str()))
+                                {
+                                    for (int n = 0; n < anims.size(); n++)
+                                    {
+                                        bool isSelected = (anims[n] == selected);
+                                        if (ImGui::Selectable((std::to_string(n) + " :" + anims[n]).c_str(), isSelected))
+                                        {
+                                            current = n;
+                                            selected = anims[n];
+                                        }
+                                        if (isSelected)
+                                            ImGui::SetItemDefaultFocus();
+                                    }
+                                    ImGui::EndCombo();
+                                }
+                                if (current != old)
+                                {
+                                    BlendNode* newBlend = new BlendNode(skel, *skel->GetAnimation(current), *skel->GetAnimation(old));
+                                    newBlend->type = newBlend->BLENDTOGETHER;
+                                    skel->PlayBlend(newBlend);
+                                }
+                            }
+                            ImGui::TreePop();
+                        }
                     }
+                    else 
+                    {
+                    
+                    }
+
+                    
                     ImGui::TreePop();
                 }
                 ImGui::TreePop();

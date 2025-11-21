@@ -843,7 +843,7 @@ void Scene::initAnimation7()
     m_sceneobject.mRootNodes[0].AddTranslation({ 0, -2, -1 });
 
     m_objects[0] = &m_sceneobject;
-}
+} 
 
 void Scene::CreateWaveAnimationSampler1(int nodeIndex, Animation* anim, Skeleton* skel)
 {

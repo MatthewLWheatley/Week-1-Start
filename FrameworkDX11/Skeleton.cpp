@@ -9,6 +9,7 @@ using namespace DirectX;
 Skeleton::Skeleton() : m_currentAnimationTime(0), m_pCurrentAnimation(nullptr), m_animationCount(0)
 {
     XMStoreFloat4x4(&m_rootTransform, XMMatrixIdentity());
+    m_blendAnimation = nullptr;
 }
 
 void Skeleton::PlayAnimation(const unsigned int animation)
@@ -29,9 +30,19 @@ void Skeleton::PlayAnimation(Animation* anim)
     m_currentAnimationTime = anim->GetStartTime();
 }
 
+void Skeleton::PlayAnimation(BlendNode* blend) 
+{
+    m_pCurrentAnimation = nullptr;
+    m_playingAnimation = -1;
+    m_blendAnimation = blend;
+    m_currentAnimationTime = blend->m_startTimes[0];
+
+}
+
 void Skeleton::PlayBlend(BlendNode* blend) 
 {
     m_blendAnimation = blend;
+    m_playingAnimation = -1;
     m_pCurrentAnimation = nullptr;
     m_currentAnimationTime = blend->m_startTimes[0];
 }
@@ -179,7 +190,6 @@ bool Skeleton::LoadFromGltf(const tinygltf::Model& model)
 
 void Skeleton::Update(float deltaTime)
 {
-    // Load the root transform we found during loading.
     DirectX::XMMATRIX rootTransform = DirectX::XMLoadFloat4x4(&m_rootTransform);
     if (!m_AnimationState) return;
     if (m_pCurrentAnimation)
@@ -205,10 +215,11 @@ void Skeleton::Update(float deltaTime)
     }
     else if (m_blendAnimation) 
     {
+        m_blendAnimation->Update(deltaTime);
     }
 }
 
-DirectX::XMMATRIX GetLocalAnimatedMatrixForJoint(
+DirectX::XMMATRIX Skeleton::GetLocalAnimatedMatrixForJoint(
     const Joint& joint,
     int jointIndex,
     const Animation* animation, // Use a pointer to allow for nullptr
@@ -296,3 +307,11 @@ void Skeleton::UpdateJointTransform(int jointIndex, const Animation* anim, float
     }
 }
 
+DirectX::XMMATRIX Skeleton::SampleJointTransform(int jointIndex, const Animation* anim, float time, const DirectX::XMMATRIX& parentTransform)
+{
+    Joint& currentJoint = m_joints[jointIndex];
+    DirectX::XMMATRIX localAnimatedMatrix = GetLocalAnimatedMatrixForJoint(currentJoint, jointIndex, anim, time);
+    DirectX::XMMATRIX finalTransform = localAnimatedMatrix * parentTransform;
+
+    return finalTransform;
+}

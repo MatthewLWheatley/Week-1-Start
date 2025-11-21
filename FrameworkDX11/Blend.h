@@ -9,6 +9,7 @@
 
 class Skeleton;
 
+
 class BlendNode
 {
 public:
@@ -18,6 +19,15 @@ public:
 	std::vector<float> m_endTimes;
 	std::vector<std::string> m_names;
 	Skeleton* skelParent;
+
+	enum BLENDTYPE
+	{
+		BLENDOUT,
+		BLENDINOUT,
+		BLENDTOGETHER,
+	};
+
+	BLENDTYPE type = BLENDTOGETHER;
 
 	BlendNode(Skeleton* skel, Animation ani1, Animation ani2)
 	{
@@ -30,6 +40,7 @@ public:
 		m_endTimes.push_back(ani2.GetEndTime());
 		m_names.push_back(ani1.m_name);
 		m_names.push_back(ani2.m_name);
+		m_currentTimes.push_back(0.0f);
 		m_currentTimes.push_back(0.0f);
 	}
 
@@ -64,5 +75,6 @@ public:
 		m_currentTimes.push_back(0.0f);
 	}
 
-	void Update(float deltaTime);
+	void Update(float deltaTime); 
+	void SampleJointTransformRecursive(int jointIndex, const Animation* anim, float time, const DirectX::XMMATRIX& parentTransform, std::vector<DirectX::XMMATRIX>& outTransforms);
 };

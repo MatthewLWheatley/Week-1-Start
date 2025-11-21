@@ -40,6 +40,8 @@ public:
     // Updates the pose of the skeleton based on the animation time.
     void Update(float deltaTime);
 
+    DirectX::XMMATRIX GetLocalAnimatedMatrixForJoint(const Joint& joint, int jointIndex, const Animation* animation, float timeInSeconds);
+
     // Returns the final skinning matrices ready to be sent to the GPU.
     const void GetSkinningMatrices(DirectX::XMMATRIX* matrixlist, unsigned int arraylength) const;
     const unsigned int GetBoneCount() { return m_skinningMatrices.size(); }
@@ -48,9 +50,16 @@ public:
     unsigned int GetAnimationCount() { return m_animationCount; }
     void PlayAnimation(const unsigned int animation);
     void PlayAnimation(Animation* anim);
+    void PlayAnimation(BlendNode* blend);
     void PlayBlend(BlendNode* blend);
     bool IsLoaded() { return m_isLoaded; }
-    Animation* CurrentAnimation() { return m_pCurrentAnimation; }
+    Animation* CurrentAnimation() { 
+        return m_pCurrentAnimation;
+    }
+
+    BlendNode* CurrentBlend() {
+        return m_blendAnimation;
+    }
 
     int AddJoint(int parentIndex, const DirectX::XMFLOAT4X4& localBindTransform);
     Joint* GetJoint(unsigned int joint) {
@@ -76,9 +85,11 @@ public:
     Animation* GetAnimation(int id) { return &m_animations[id]; }
     float m_currentAnimationTime;
 
+    DirectX::XMMATRIX SampleJointTransform(int jointIndex, const Animation* anim, float time, const DirectX::XMMATRIX& parentTransform);
+
     friend class BlendNode;
-private:
     void UpdateJointTransform(int jointIndex, const Animation* anim, float time, const DirectX::XMMATRIX& parentTransform);
+private:
 
     std::vector<Joint> m_joints;
 
