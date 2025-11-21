@@ -155,7 +155,7 @@ float NormalDistrobution(float roughness, float3 N, float3 H)
 {
     float NdotH = max(dot(N, H), 0.0);
     float a = roughness * roughness;
-    float a2 = a*a;
+    float a2 = a;
     float denom = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
     return a2 / (PI * (denom * denom));
 }
@@ -285,7 +285,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         float3 prefilteredColor = iblSpecular.SampleLevel(samLinear, R, prefilteredLod).rgb;
         float2 BRDF = clamp(IntergrateBRDF(cosTheta, roughness),0.0f, 1.0f);
         float3 specularIBL = prefilteredColor * (F * BRDF.x + BRDF.y);
-        //diffuseIBL *= 0.05; // i know this is wrong but it was way to bright
+        diffuseIBL *= 0.05; // i know this is wrong but it was way to bright
         finalIBL = diffuseIBL + specularIBL;
     }
     

@@ -59,7 +59,7 @@ HRESULT DX11Renderer::init(HWND hwnd)
     };
 
     UINT numElements = ARRAYSIZE(layout);
-
+    
     // Create the input layout
     hr = m_pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
         pVSBlob->GetBufferSize(), &m_pVertexLayout);
@@ -827,7 +827,10 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
                 if (ImGui::Button("Metal 2"))
                 {
                     m_pScene->SwapTextures(4);
-
+                }
+                if (ImGui::Button("Metal Diamond Plate"))
+                {
+                    m_pScene->SwapTextures(5);
                 }
                 ImGui::TreePop();
             }
