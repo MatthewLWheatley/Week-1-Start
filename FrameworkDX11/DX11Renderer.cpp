@@ -921,9 +921,13 @@ void DX11Renderer::startIMGUIDraw(const unsigned int FPS, const float deltaTime)
                     }
                     else 
                     {
-                    
-                    }
+                        BlendNode* blend = skel->CurrentBlend();
+                        if (skel->CurrentBlend()->type == skel->CurrentBlend()->BLENDTOGETHER) 
+                        {
+                            
+                        }
 
+                    }
                     
                     ImGui::TreePop();
                 }
