@@ -148,9 +148,9 @@ void Scene::SwapTextures(int id)
         CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal053C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
         break;
     case 4:
-        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
-        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
-        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal054C_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal048A_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal048A_2K-PNG_Metalness.dds", nullptr, &m_pTextureMetallic);
+        CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\Metal048A_2K-PNG_Roughness.dds", nullptr, &m_pTextureRoughness);
         break;
     case 5:
         CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"Resources\\DiamondPlate008A_2K-PNG_Color.dds", nullptr, &m_pTextureDiffuse);
