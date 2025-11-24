@@ -200,7 +200,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
     
     if (textureSelect == 1)
     {
-        albedo = albedoMap.Sample(samLinear, IN.Tex).xyz;
+        albedo = pow(albedoMap.Sample(samLinear, IN.Tex).xyz, 2.4);
         metallic = MetallicMap.Sample(samLinear, IN.Tex).r;
         roughness = RoughnessMap.Sample(samLinear, IN.Tex).r;
     }
@@ -285,7 +285,7 @@ float4 PS_PBR(PS_INPUT IN) : SV_TARGET
         float3 prefilteredColor = iblSpecular.SampleLevel(samLinear, R, prefilteredLod).rgb;
         float2 BRDF = clamp(IntergrateBRDF(cosTheta, roughness),0.0f, 1.0f);
         float3 specularIBL = prefilteredColor * (F * BRDF.x + BRDF.y);
-        diffuseIBL *= 0.05; // i know this is wrong but it was way to bright
+        //diffuseIBL *= 0.05; // i know this is wrong but it was way to bright
         finalIBL = diffuseIBL + specularIBL;
     }
     
